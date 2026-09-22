@@ -34,6 +34,50 @@ import { inquiries } from "@/lib/db/schema";
 
 type ToolError = { error: string };
 
+/**
+ * Where a draft is read from and written to.
+ *
+ * The chat route stores it on the inquiry row; the eval runner keeps it in
+ * memory so fixtures never touch the database.
+ */
+export type DraftStore = {
+  load: () => Promise<WorkingDraft>;
+  save: (draft: WorkingDraft) => Promise<void>;
+};
+
+/** The database-backed store used by the chat route. */
+export function inquiryDraftStore(inquiryId: string): DraftStore {
+  return {
+    async load() {
+      const [inquiry] = await db
+        .select({ workingDraft: inquiries.workingDraft, language: inquiries.language })
+        .from(inquiries)
+        .where(eq(inquiries.id, inquiryId))
+        .limit(1);
+
+      return parseDraft(inquiry?.workingDraft, inquiry?.language ?? "en");
+    },
+    async save(draft) {
+      await db
+        .update(inquiries)
+        .set({ workingDraft: draft, updatedAt: new Date() })
+        .where(eq(inquiries.id, inquiryId));
+    },
+  };
+}
+
+/** An in-memory store, for evals and tests. */
+export function memoryDraftStore(initial: WorkingDraft): DraftStore {
+  let draft = initial;
+
+  return {
+    load: async () => draft,
+    save: async (next) => {
+      draft = next;
+    },
+  };
+}
+
 /** The compact draft view every mutating tool returns to the model. */
 type DraftSummary = {
   events: {
@@ -62,22 +106,14 @@ type DraftSummary = {
   currency: string;
 };
 
-export function createAgentTools(inquiryId: string) {
-  async function loadDraft(): Promise<WorkingDraft> {
-    const [inquiry] = await db
-      .select({ workingDraft: inquiries.workingDraft, language: inquiries.language })
-      .from(inquiries)
-      .where(eq(inquiries.id, inquiryId))
-      .limit(1);
-
-    return parseDraft(inquiry?.workingDraft, inquiry?.language ?? "en");
-  }
+export function createAgentTools(
+  inquiryId: string,
+  store: DraftStore = inquiryDraftStore(inquiryId),
+) {
+  const loadDraft = store.load;
 
   async function saveDraft(draft: WorkingDraft) {
-    await db
-      .update(inquiries)
-      .set({ workingDraft: draft, updatedAt: new Date() })
-      .where(eq(inquiries.id, inquiryId));
+    await store.save(draft);
 
     return summarize(draft);
   }
@@ -149,7 +185,10 @@ export function createAgentTools(inquiryId: string) {
           description: product.description,
           unit: product.unit,
           type: product.contentType,
+          // Both forms: the minor units are the source of truth, the
+          // formatted string stops the model quoting "850" for 8.50 EUR.
           unitPriceMinor: product.unitPriceMinor,
+          unitPrice: `${(product.unitPriceMinor / 100).toFixed(2)} ${product.currency}`,
           vatRate: product.vatRate,
           currency: product.currency,
         }));

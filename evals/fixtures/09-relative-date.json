@@ -1,0 +1,19 @@
+{
+  "id": "09-relative-date",
+  "name": "Relative date: \"next Thursday\"",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Ben Carter",
+    "email": "ben.carter@loomfield.com",
+    "companyName": "Loomfield",
+    "language": "en",
+    "message": "Could we book a workshop room next Thursday for 15 people, 10:00 until 15:00? A flip chart would be handy.",
+    "events": []
+  },
+  "expect": {
+    "eventCount": 1,
+    "headcounts": [15],
+    "resolvesRelativeDate": { "weekday": 4, "notBefore": "2026-09-22" },
+    "addsItems": true
+  }
+}

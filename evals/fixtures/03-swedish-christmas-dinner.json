@@ -1,0 +1,22 @@
+{
+  "id": "03-swedish-christmas-dinner",
+  "name": "Swedish inquiry: julmiddag for 30",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Elin Bergström",
+    "email": "elin.bergstrom@vasaevent.se",
+    "companyName": "Vasa Event AB",
+    "language": "sv",
+    "message": "Hej! Vi planerar en julmiddag för 30 personer den 3 december, 18:00-22:00. Vi vill gärna ha ett eget rum. Kan ni skicka en offert?",
+    "events": [{ "date": "2026-12-03", "startTime": "18:00", "endTime": "22:00" }]
+  },
+  "expect": {
+    "eventCount": 1,
+    "eventTypes": ["dinner"],
+    "headcounts": [30],
+    "dates": ["2026-12-03"],
+    "asksForMissingInfo": false,
+    "repliesInSwedish": true,
+    "addsItems": true
+  }
+}

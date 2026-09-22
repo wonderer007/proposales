@@ -1,0 +1,29 @@
+{
+  "id": "10-budget-mentioned",
+  "name": "Budget mentioned \u2014 recorded, never blocking",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Laura Vidal",
+    "email": "laura.vidal@arcadia.es",
+    "companyName": "Arcadia",
+    "language": "en",
+    "message": "We would like a meeting room and lunch for 20 people on 26 November, 09:00-16:00. Our budget is around 2500 EUR in total. Can you make that work?",
+    "events": [
+      {
+        "date": "2026-11-26",
+        "startTime": "09:00",
+        "endTime": "16:00"
+      }
+    ]
+  },
+  "expect": {
+    "minEventCount": 2,
+    "headcounts": [
+      20,
+      20
+    ],
+    "asksForMissingInfo": false,
+    "recordsBudget": true,
+    "addsItems": true
+  }
+}

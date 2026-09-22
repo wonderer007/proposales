@@ -1,0 +1,21 @@
+{
+  "id": "05-multi-day-conference",
+  "name": "Multi-day conference with overnight stays",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Tomas Lind",
+    "email": "tomas.lind@nordicsummit.se",
+    "companyName": "Nordic Summit",
+    "language": "en",
+    "message": "We are running a two-day conference on 18 and 19 November for 40 delegates, 09:00-17:00 both days. 25 of the delegates need a room for the night in between. Please include lunch on both days.",
+    "events": [
+      { "date": "2026-11-18", "endDate": "2026-11-19", "startTime": "09:00", "endTime": "17:00" }
+    ]
+  },
+  "expect": {
+    "minEventCount": 2,
+    "mustIncludeTypes": ["conference", "accommodation"],
+    "asksForMissingInfo": false,
+    "addsItems": true
+  }
+}

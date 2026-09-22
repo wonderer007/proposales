@@ -1,0 +1,19 @@
+{
+  "id": "07-unmatched-requirement",
+  "name": "Requirement the catalog cannot satisfy",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Daniel Okafor",
+    "email": "daniel@brightpath.io",
+    "companyName": "Brightpath",
+    "language": "en",
+    "message": "We need a meeting room for 20 people on 12 November, 09:00-17:00. We also need a simultaneous interpretation booth with two interpreters, and a photographer for the afternoon.",
+    "events": [{ "date": "2026-11-12", "startTime": "09:00", "endTime": "17:00" }]
+  },
+  "expect": {
+    "eventCount": 1,
+    "headcounts": [20],
+    "asksForMissingInfo": false,
+    "hasUnmatchedRequirement": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "02-quarterly-meeting-projector",
+  "name": "Free text: quarterly meeting for 25, needs a projector",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Anna Lindqvist",
+    "email": "anna.lindqvist@northstar.se",
+    "companyName": "Northstar Consulting",
+    "language": "en",
+    "message": "Hi! We would like to book our quarterly meeting for 25 people on 14 October, 09:00 to 16:00. We need a room with a projector, and coffee during the morning. Could you send us a proposal?",
+    "events": [
+      {
+        "date": "2026-10-14",
+        "startTime": "09:00",
+        "endTime": "16:00"
+      }
+    ]
+  },
+  "expect": {
+    "minEventCount": 1,
+    "mustIncludeTypes": [
+      "meeting"
+    ],
+    "allHeadcounts": 25,
+    "allDates": "2026-10-14",
+    "asksForMissingInfo": false,
+    "mentionsRoomChoice": true
+  }
+}

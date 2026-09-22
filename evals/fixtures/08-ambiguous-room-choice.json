@@ -1,0 +1,19 @@
+{
+  "id": "08-ambiguous-room-choice",
+  "name": "Two rooms fit — must ask the manager to choose",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Greta Nilsson",
+    "email": "greta@nilssonco.se",
+    "companyName": "Nilsson & Co",
+    "language": "en",
+    "message": "We need a meeting room for 24 people on 20 October, 09:00-16:00. A projector would be good. Nothing else needed.",
+    "events": [{ "date": "2026-10-20", "startTime": "09:00", "endTime": "16:00" }]
+  },
+  "expect": {
+    "eventCount": 1,
+    "headcounts": [24],
+    "asksForMissingInfo": false,
+    "mentionsRoomChoice": true
+  }
+}

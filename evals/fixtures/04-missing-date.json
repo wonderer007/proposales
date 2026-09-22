@@ -1,0 +1,21 @@
+{
+  "id": "04-missing-date",
+  "name": "No date anywhere — must ask, never guess",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Priya Raman",
+    "email": "priya@ramanpartners.com",
+    "companyName": "Raman Partners",
+    "language": "en",
+    "message": "Hi, we are planning a team offsite for about 30 people. We will need a meeting room for the day and lunch. Could you send us a quote?",
+    "events": []
+  },
+  "expect": {
+    "eventCount": 2,
+    "eventTypes": ["meeting", "lunch"],
+    "headcounts": [30, 30],
+    "dates": [null, null],
+    "asksForMissingInfo": true,
+    "neverInventsADate": true
+  }
+}

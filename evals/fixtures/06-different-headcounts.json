@@ -1,0 +1,23 @@
+{
+  "id": "06-different-headcounts",
+  "name": "Different headcounts per event",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Sara Moreau",
+    "email": "sara.moreau@helixlabs.com",
+    "companyName": "Helix Labs",
+    "language": "en",
+    "message": "On 3 December we have a board meeting for 12 people from 09:00 to 12:00, and then a dinner for 40 people from 19:00 to 22:00 when the wider team joins.",
+    "events": [
+      { "date": "2026-12-03", "startTime": "09:00", "endTime": "12:00" },
+      { "date": "2026-12-03", "startTime": "19:00", "endTime": "22:00" }
+    ]
+  },
+  "expect": {
+    "eventCount": 2,
+    "eventTypes": ["meeting", "dinner"],
+    "headcounts": [12, 40],
+    "asksForMissingInfo": false,
+    "addsItems": true
+  }
+}
