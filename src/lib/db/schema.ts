@@ -3,6 +3,7 @@ import {
   date,
   index,
   integer,
+  numeric,
   jsonb,
   pgTable,
   text,
@@ -12,6 +13,8 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+import type { ContentType, Unit } from "@/lib/proposales/schemas";
 
 /** Languages a proposal can be written in. */
 export type Language = "en" | "sv";
@@ -111,6 +114,31 @@ export const messages = pgTable(
   (table) => [index("messages_inquiry_id_created_at_idx").on(table.inquiryId, table.createdAt)],
 );
 
+/**
+ * Pricing for content-library products.
+ *
+ * The Proposales content API stores only title, description and images — it has
+ * no price, unit, VAT or type, and rejects them on create. So the hotel's
+ * pricing lives here, keyed by the `variation_id` the API returns, and is sent
+ * explicitly on each proposal block when a proposal is created.
+ */
+export const contentCatalog = pgTable("content_catalog", {
+  /** Proposales variation id; each product has exactly one variation. */
+  variationId: integer("variation_id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  /** Title as seeded, for readable diagnostics and title-based backfill. */
+  title: text("title").notNull(),
+  unit: text("unit").$type<Unit>().notNull(),
+  contentType: text("content_type").$type<ContentType>().notNull(),
+  /** Price for one unit, excluding VAT, in minor units (cents). */
+  unitPriceMinor: integer("unit_price_minor").notNull(),
+  /** VAT rate between 0 and 1, e.g. 0.25. */
+  vatRate: numeric("vat_rate", { precision: 5, scale: 4, mode: "number" }).notNull(),
+  currency: text("currency").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Inquiry = typeof inquiries.$inferSelect;
 export type NewInquiry = typeof inquiries.$inferInsert;
 export type InquiryEvent = typeof inquiryEvents.$inferSelect;
@@ -119,3 +147,5 @@ export type Proposal = typeof proposals.$inferSelect;
 export type NewProposal = typeof proposals.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
+export type CatalogEntry = typeof contentCatalog.$inferSelect;
+export type NewCatalogEntry = typeof contentCatalog.$inferInsert;

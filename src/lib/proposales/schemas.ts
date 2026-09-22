@@ -45,11 +45,28 @@ export type ContentItem = z.infer<typeof contentItemSchema>;
 
 export const listContentResponseSchema = z.object({ data: z.array(contentItemSchema) });
 
+/**
+ * Either an Uploadcare `uuid`, or an empty `uuid` plus a public `url` that
+ * Proposales downloads and re-hosts. Images that fail to download are silently
+ * skipped by the API.
+ */
+export const contentImageInputSchema = z.object({
+  uuid: z.string(),
+  url: z.url().optional(),
+  filename: z.string().optional(),
+  mime_type: z.string().optional(),
+  size: z.number().int().min(0).optional(),
+  height: z.number().int().min(0).optional(),
+  width: z.number().int().min(0).optional(),
+});
+export type ContentImageInput = z.infer<typeof contentImageInputSchema>;
+
 export const createContentRequestSchema = z.object({
   company_id: z.number().int().min(1),
   language: z.string().min(2),
   title: z.string().min(1),
   description: z.string().optional(),
+  images: z.array(contentImageInputSchema).optional(),
 });
 export type CreateContentRequest = z.infer<typeof createContentRequestSchema>;
 
@@ -91,9 +108,31 @@ export const createRfpResponseSchema = z.object({ id: z.number().int() });
 
 // ----------------------------------------------------------------- proposals
 
+/**
+ * Units a product/block can be priced in, from the Proposal Block entity
+ * reference. Note `sqm` exists and `week` does not, unlike SPEC §3.
+ */
+export const unitSchema = z.enum([
+  "day",
+  "h",
+  "kg",
+  "m",
+  "month",
+  "night",
+  "person",
+  "sqm",
+  "unit",
+  "year",
+]);
+export type Unit = z.infer<typeof unitSchema>;
+
+/** Product categories, as used by `package_split.type`. */
+export const contentTypeSchema = z.enum(["accommodation", "meetingRoom", "food", "other"]);
+export type ContentType = z.infer<typeof contentTypeSchema>;
+
 /** VAT split for a block. `vat` is a rate between 0 and 1. */
 export const packageSplitSchema = z.object({
-  type: z.enum(["accommodation", "meetingRoom", "food", "other"]),
+  type: contentTypeSchema,
   vat: z.number().min(0).max(1).optional(),
   /** Minor units (cents). */
   value_without_tax: z.number().optional(),

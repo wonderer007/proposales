@@ -9,9 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:seed": "bun run scripts/seed-db.ts"
+    "db:generate": "bun --bun drizzle-kit generate",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:seed": "bun run scripts/seed-db.ts",
+    "content:seed": "bun run scripts/seed-content.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
