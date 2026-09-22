@@ -20,24 +20,24 @@ const lunch: CatalogProduct = {
 
 describe("lineTotal", () => {
   test("multiplies unit price by quantity and adds VAT", () => {
-    expect(lineTotal({ id: "i1", unitPriceMinor: 3_200, quantity: 25, vatRate: 0.12 })).toEqual({
+    expect(lineTotal({ id: "i1", unitPriceMinor: 3_200, quantity: 25, vatRate: 0.12, discount: null })).toMatchObject({
       itemId: "i1", exclVatMinor: 80_000, vatMinor: 9_600, inclVatMinor: 89_600,
     });
   });
 
   test("handles a fractional quantity from hourly pricing", () => {
-    expect(lineTotal({ id: "i1", unitPriceMinor: 9_000, quantity: 3.5, vatRate: 0.25 })).toEqual({
+    expect(lineTotal({ id: "i1", unitPriceMinor: 9_000, quantity: 3.5, vatRate: 0.25, discount: null })).toMatchObject({
       itemId: "i1", exclVatMinor: 31_500, vatMinor: 7_875, inclVatMinor: 39_375,
     });
   });
 
   test("rounds rather than leaving fractional minor units", () => {
     // 3.5 × 833 = 2915.5 → 2916, VAT 2916 × 0.12 = 349.92 → 350
-    const line = lineTotal({ id: "i1", unitPriceMinor: 833, quantity: 3.5, vatRate: 0.12 });
+    const line = lineTotal({ id: "i1", unitPriceMinor: 833, quantity: 3.5, vatRate: 0.12, discount: null });
 
     expect(Number.isInteger(line.exclVatMinor)).toBe(true);
     expect(Number.isInteger(line.vatMinor)).toBe(true);
-    expect(line).toEqual({ itemId: "i1", exclVatMinor: 2_916, vatMinor: 350, inclVatMinor: 3_266 });
+    expect(line).toMatchObject({ itemId: "i1", exclVatMinor: 2_916, vatMinor: 350, inclVatMinor: 3_266 });
   });
 });
 

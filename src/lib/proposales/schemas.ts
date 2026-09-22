@@ -153,7 +153,20 @@ export const proposalBlockInputSchema = z.object({
   currency: z.string().optional(),
   quantity: z.number().optional(),
   quantity_editable: z.boolean().optional(),
+  /**
+   * Documented on the Proposal Block entity but absent from the OpenAPI input
+   * schema. Verified by round-trip on 2026-09-22: they persist and are
+   * returned by Get Proposal. The block schema is not strict, so an unknown
+   * field here would be silently ignored rather than rejected.
+   */
+  quantity_min: z.number().optional(),
+  quantity_max: z.number().optional(),
+  quantity_visible: z.boolean().optional(),
+  comment: z.string().optional(),
+  percent_discount: z.number().min(0).max(1).optional(),
+  fixed_discount: z.number().min(0).optional(),
   optional: z.boolean().optional(),
+  optional_picked: z.boolean().optional(),
   package_split: z.array(packageSplitSchema).optional(),
   /** All four unit values are per single unit, in minor units (cents). */
   unit_value_with_discount_with_tax: z.number().optional(),

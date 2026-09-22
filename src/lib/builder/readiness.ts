@@ -42,13 +42,46 @@ export function checkReadiness(
     }
 
     const items = draft.items.filter((item) => item.eventId === event.id);
-    if (items.length === 0) reasons.push(`${name}: nothing selected yet.`);
+    if (items.length === 0) {
+      reasons.push(`${name}: nothing selected yet.`);
+    } else if (items.every((item) => item.optional)) {
+      // An event made entirely of optional items could be declined down to
+      // nothing, which is not an offer (SPEC §6.5 rule 3).
+      reasons.push(`${name}: everything is optional — at least one item must be included.`);
+    }
 
     items.forEach((item) => {
       if (!knownVariationIds.has(item.variationId)) {
         reasons.push(`"${item.title}" is no longer in the content library.`);
       }
-      if (item.quantity <= 0) reasons.push(`"${item.title}": quantity must be more than zero.`);
+
+      // An optional item may sit at zero; a committed one may not.
+      if (item.quantity <= 0 && !item.optional) {
+        reasons.push(`"${item.title}": quantity must be more than zero.`);
+      }
+
+      if (item.quantityEditable) {
+        if (item.quantityMin === null && item.quantityMax === null) {
+          reasons.push(`"${item.title}": flexible quantity needs a minimum or a maximum.`);
+        }
+        if (item.quantityMin !== null && item.quantity < item.quantityMin) {
+          reasons.push(
+            `"${item.title}": quantity ${item.quantity} is below the minimum of ${item.quantityMin}.`,
+          );
+        }
+        if (item.quantityMax !== null && item.quantity > item.quantityMax) {
+          reasons.push(
+            `"${item.title}": quantity ${item.quantity} is above the maximum of ${item.quantityMax}.`,
+          );
+        }
+        if (
+          item.quantityMin !== null &&
+          item.quantityMax !== null &&
+          item.quantityMin > item.quantityMax
+        ) {
+          reasons.push(`"${item.title}": the minimum is above the maximum.`);
+        }
+      }
     });
   });
 

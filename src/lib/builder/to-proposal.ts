@@ -100,7 +100,7 @@ export function buildBlock(item: DraftItem): ProposalBlockInput {
   const exclVat = item.unitPriceMinor;
   const inclVat = Math.round(exclVat * (1 + item.vatRate));
 
-  return {
+  const block: ProposalBlockInput = {
     type: "product-block",
     content_id: item.variationId,
     quantity: item.quantity,
@@ -118,6 +118,32 @@ export function buildBlock(item: DraftItem): ProposalBlockInput {
       },
     ],
   };
+
+  if (item.optional) {
+    block.optional = true;
+    block.optional_picked = item.optionalPicked;
+  }
+
+  if (item.quantityEditable) {
+    block.quantity_editable = true;
+    // A quantity the recipient can change has to be one they can see, so this
+    // follows the toggle rather than being a setting of its own.
+    block.quantity_visible = true;
+    if (item.quantityMin !== null) block.quantity_min = item.quantityMin;
+    if (item.quantityMax !== null) block.quantity_max = item.quantityMax;
+  }
+
+  if (item.comment) block.comment = item.comment;
+
+  // Discounts are modelled here but only applied in D15. The undiscounted unit
+  // values above are deliberate: Proposales applies the reduction itself, so
+  // sending an already-reduced unit value would double-count it.
+  if (item.discount) {
+    if (item.discount.type === "percent") block.percent_discount = item.discount.value;
+    else block.fixed_discount = item.discount.value;
+  }
+
+  return block;
 }
 
 export function toProposalRequest(

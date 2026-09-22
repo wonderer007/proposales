@@ -95,6 +95,9 @@ describe("buildBlock", () => {
       id: "i1", eventId: "e1", productId: 1, variationId: 101, title: "Vasa Room",
       unit: "day", contentType: "meetingRoom", unitPriceMinor: 85_000, vatRate: 0.25,
       currency: "EUR", quantity: 1, quantitySource: "computed",
+      role: "core", optional: false, optionalPicked: false, quantityEditable: false,
+      quantityMin: null, quantityMax: null, discount: null, policyOverride: null,
+      suggested: null,
     });
 
     expect(block).toEqual({
@@ -117,6 +120,9 @@ describe("buildBlock", () => {
       id: "i1", eventId: "e1", productId: 2, variationId: 102, title: "Coffee",
       unit: "person", contentType: "food", unitPriceMinor: 850, vatRate: 0.12,
       currency: "EUR", quantity: 25, quantitySource: "computed",
+      role: "core", optional: false, optionalPicked: false, quantityEditable: false,
+      quantityMin: null, quantityMax: null, discount: null, policyOverride: null,
+      suggested: null,
     });
 
     // 850 × 1.12 = 952
@@ -172,5 +178,66 @@ describe("toProposalRequest", () => {
     expect(request.recipient).toEqual({
       first_name: "Anna", last_name: "Lindqvist", email: "anna@northstar.se",
     });
+  });
+});
+
+describe("buildBlock with optional and flexible settings", () => {
+  const item = {
+    id: "i1", eventId: "e1", productId: 2, variationId: 102, title: "Lunch buffet",
+    unit: "person" as const, contentType: "food" as const, unitPriceMinor: 3_200,
+    vatRate: 0.12, currency: "EUR", quantity: 25, quantitySource: "computed" as const,
+    role: "core" as const, optional: false, optionalPicked: false,
+    quantityEditable: false, quantityMin: null, quantityMax: null,
+    discount: null, policyOverride: null, suggested: null,
+  };
+
+  test("sends nothing extra for a plain committed item", () => {
+    const block = buildBlock(item);
+
+    expect(block.optional).toBeUndefined();
+    expect(block.quantity_editable).toBeUndefined();
+    expect(block.quantity_min).toBeUndefined();
+    expect(block.comment).toBeUndefined();
+  });
+
+  test("maps an optional item", () => {
+    const block = buildBlock({ ...item, optional: true, optionalPicked: true });
+
+    expect(block.optional).toBe(true);
+    expect(block.optional_picked).toBe(true);
+  });
+
+  test("maps flexible quantity, and makes it visible", () => {
+    const block = buildBlock({
+      ...item, quantityEditable: true, quantityMin: 12, quantityMax: 16,
+    });
+
+    expect(block).toMatchObject({
+      quantity_editable: true, quantity_visible: true, quantity_min: 12, quantity_max: 16,
+    });
+  });
+
+  test("omits a bound that is not set", () => {
+    const block = buildBlock({ ...item, quantityEditable: true, quantityMax: 40 });
+
+    expect(block.quantity_min).toBeUndefined();
+    expect(block.quantity_max).toBe(40);
+  });
+
+  test("passes the recipient-facing comment through", () => {
+    expect(buildBlock({ ...item, comment: "Adjust as you like" }).comment).toBe("Adjust as you like");
+  });
+
+  test("maps a discount without pre-reducing the unit values", () => {
+    const percent = buildBlock({ ...item, discount: { type: "percent", value: 0.1 } });
+
+    expect(percent.percent_discount).toBe(0.1);
+    expect(percent.fixed_discount).toBeUndefined();
+    // Proposales applies the reduction, so the unit values stay undiscounted.
+    expect(percent.unit_value_with_discount_without_tax).toBe(3_200);
+
+    const fixed = buildBlock({ ...item, discount: { type: "fixed", value: 5_000 } });
+    expect(fixed.fixed_discount).toBe(5_000);
+    expect(fixed.percent_discount).toBeUndefined();
   });
 });
