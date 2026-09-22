@@ -6,11 +6,15 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db/client";
 import { inquiries } from "@/lib/db/schema";
 import {
+  applyItemSuggestion,
   clearFlag,
   confirmDate,
+  dismissItemSuggestion,
   parseDraft,
   removeItem,
+  setItemOptions,
   setQuantity,
+  type ItemOptions,
   type WorkingDraft,
 } from "./draft";
 
@@ -79,4 +83,38 @@ export async function removeDraftItem(
 
 export async function dismissFlag(inquiryId: string, flagId: string): Promise<BuilderResult> {
   return updateDraft(inquiryId, (draft) => clearFlag(draft, flagId));
+}
+
+/** The manager changing an item's presentation settings on the card. */
+export async function updateItemOptions(
+  inquiryId: string,
+  itemId: string,
+  options: ItemOptions,
+): Promise<BuilderResult> {
+  const { quantityMin, quantityMax } = options;
+
+  if (quantityMin != null && quantityMin < 0) {
+    return { ok: false, error: "The minimum cannot be negative" };
+  }
+  if (quantityMin != null && quantityMax != null && quantityMin > quantityMax) {
+    return { ok: false, error: "The minimum cannot be above the maximum" };
+  }
+
+  return updateDraft(inquiryId, (draft) => setItemOptions(draft, itemId, options));
+}
+
+/** Accepting what the agent proposed: only now does the offer change. */
+export async function acceptItemSuggestion(
+  inquiryId: string,
+  itemId: string,
+): Promise<BuilderResult> {
+  return updateDraft(inquiryId, (draft) => applyItemSuggestion(draft, itemId));
+}
+
+/** Declining a suggestion. The offer is untouched either way. */
+export async function rejectItemSuggestion(
+  inquiryId: string,
+  itemId: string,
+): Promise<BuilderResult> {
+  return updateDraft(inquiryId, (draft) => dismissItemSuggestion(draft, itemId));
 }

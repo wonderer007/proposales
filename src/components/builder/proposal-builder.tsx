@@ -1,6 +1,8 @@
 import { AlertTriangle, Info, Sparkles } from "lucide-react";
 
 import { DateConfirm } from "@/components/builder/date-confirm";
+import { ItemOptions } from "@/components/builder/item-options";
+import { ItemSuggestionCard } from "@/components/builder/item-suggestion";
 import { DismissFlagButton } from "@/components/builder/dismiss-flag-button";
 import { QuantityInput } from "@/components/builder/quantity-input";
 import { RemoveItemButton } from "@/components/builder/remove-item-button";
@@ -13,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { proposalAction, proposalActionLabel } from "@/lib/builder/action-label";
-import type { DraftEvent, WorkingDraft } from "@/lib/builder/draft";
+import type { DraftEvent, DraftItem, WorkingDraft } from "@/lib/builder/draft";
 import type { Readiness } from "@/lib/builder/readiness";
 import { calculateTotals, formatMoney } from "@/lib/builder/totals";
 import { formatDate, formatTime } from "@/lib/format";
@@ -34,6 +36,38 @@ function InferredMark({ field }: { field: string }) {
         <TooltipContent>Inferred from the inquiry — check it is right.</TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+/** Compact badges showing what the recipient may do with a line. */
+function ItemStateBadges({ item }: { item: DraftItem }) {
+  const range =
+    item.quantityMin !== null && item.quantityMax !== null
+      ? `${item.quantityMin}–${item.quantityMax}`
+      : item.quantityMin !== null
+        ? `from ${item.quantityMin}`
+        : item.quantityMax !== null
+          ? `up to ${item.quantityMax}`
+          : null;
+
+  return (
+    <>
+      {item.role === "addon" ? (
+        <Badge variant="outline" className="align-middle">
+          add-on
+        </Badge>
+      ) : null}
+      {item.optional ? (
+        <Badge variant="secondary" className="align-middle">
+          optional
+        </Badge>
+      ) : null}
+      {item.quantityEditable ? (
+        <Badge variant="outline" className="align-middle">
+          flexible{range ? ` ${range}` : ""}
+        </Badge>
+      ) : null}
+    </>
   );
 }
 
@@ -125,12 +159,21 @@ export function ProposalBuilder({
             ) : (
               <ul className="divide-y">
                 {items.map((item) => {
-                  const line = totals.lines.find((candidate) => candidate.itemId === item.id);
+                  // Optional lines are absent from the committed breakdown, so
+                  // fall back to the maximum one — the row must still show what
+                  // the line costs if the customer takes it.
+                  const line =
+                    totals.lines.find((candidate) => candidate.itemId === item.id) ??
+                    totals.maximum.lines.find((candidate) => candidate.itemId === item.id);
 
                   return (
-                    <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
+                    <li key={item.id} className="py-2">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                       <div className="min-w-40 flex-1">
-                        <p className="text-sm">{item.title}</p>
+                        <p className="flex flex-wrap items-center gap-1.5 text-sm">
+                          {item.title}
+                          <ItemStateBadges item={item} />
+                        </p>
                         <p className="text-muted-foreground text-xs tabular-nums">
                           {formatMoney(item.unitPriceMinor, item.currency)} / {item.unit} ·{" "}
                           {Math.round(item.vatRate * 100)}% VAT
@@ -138,6 +181,9 @@ export function ProposalBuilder({
                         </p>
                         {item.note ? (
                           <p className="text-muted-foreground text-xs italic">{item.note}</p>
+                        ) : null}
+                        {item.comment ? (
+                          <p className="text-muted-foreground text-xs">Note: {item.comment}</p>
                         ) : null}
                       </div>
 
@@ -147,15 +193,32 @@ export function ProposalBuilder({
                         quantity={item.quantity}
                       />
 
-                      <span className="w-24 text-right text-sm tabular-nums">
+                      <span
+                        className={cn(
+                          "w-24 text-right text-sm tabular-nums",
+                          // Muted because it is not part of the committed total.
+                          item.optional && "text-muted-foreground",
+                        )}
+                      >
                         {formatMoney(line?.exclVatMinor ?? 0, item.currency)}
                       </span>
+
+                      <ItemOptions inquiryId={inquiryId} item={item} />
 
                       <RemoveItemButton
                         inquiryId={inquiryId}
                         itemId={item.id}
                         title={item.title}
                       />
+                      </div>
+
+                      {item.suggested ? (
+                        <ItemSuggestionCard
+                          inquiryId={inquiryId}
+                          itemId={item.id}
+                          suggestion={item.suggested}
+                        />
+                      ) : null}
                     </li>
                   );
                 })}
@@ -224,9 +287,21 @@ export function ProposalBuilder({
           </div>
         ))}
         <div className="flex justify-between font-medium">
-          <span>Incl. VAT</span>
+          <span>{totals.hasFlexibleValue ? "Committed incl. VAT" : "Incl. VAT"}</span>
           <span>{formatMoney(totals.inclVatMinor, totals.currency)}</span>
         </div>
+
+        {/*
+          With optional or flexible lines there is no single price: the
+          committed figure is what the customer is certain to pay, the maximum
+          is the ceiling if they take everything at its upper bound.
+        */}
+        {totals.hasFlexibleValue ? (
+          <div className="text-muted-foreground flex justify-between border-t pt-1">
+            <span>If all options are taken</span>
+            <span>{formatMoney(totals.maximum.inclVatMinor, totals.currency)}</span>
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-2">
