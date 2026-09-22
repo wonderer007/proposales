@@ -25,6 +25,7 @@ describe("the agent's tool set", () => {
         "removeEvent",
         "removeItem",
         "setBudget",
+        "setItemOptions",
         "setRequirements",
         "upsertEvent",
       ].sort(),
@@ -67,6 +68,37 @@ describe("the agent's tool set", () => {
     const schema = (tools.addItem as { inputSchema?: { shape?: Record<string, unknown> } })
       .inputSchema;
 
-    expect(Object.keys(schema?.shape ?? {}).sort()).toEqual(["eventId", "note", "variationId"]);
+    expect(Object.keys(schema?.shape ?? {}).sort()).toEqual([
+      "eventId",
+      "note",
+      "role",
+      "variationId",
+    ]);
+  });
+
+  test("setItemOptions demands an origin, so applying is never implicit", () => {
+    const schema = (tools.setItemOptions as { inputSchema?: { shape?: Record<string, unknown> } })
+      .inputSchema;
+
+    expect(Object.keys(schema?.shape ?? {})).toContain("origin");
+  });
+
+  test("the agent cannot apply a discount or a policy override", () => {
+    // Discounts stay with the manager (SPEC §6.6); the agent may only propose
+    // one, and that tool arrives in D15.
+    for (const [name, definition] of Object.entries(tools)) {
+      const schema = (definition as { inputSchema?: { shape?: Record<string, unknown> } })
+        .inputSchema;
+      const keys = Object.keys(schema?.shape ?? {}).join(",");
+
+      expect(`${name}:${keys}`).not.toMatch(/discount|policyOverride/i);
+    }
+  });
+
+  test("the agent cannot pre-select an optional item for the customer", () => {
+    const schema = (tools.setItemOptions as { inputSchema?: { shape?: Record<string, unknown> } })
+      .inputSchema;
+
+    expect(Object.keys(schema?.shape ?? {})).not.toContain("optionalPicked");
   });
 });

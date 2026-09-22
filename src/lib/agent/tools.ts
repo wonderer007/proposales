@@ -7,12 +7,16 @@ import {
   addItem,
   clearFlag,
   eventTypeSchema,
+  headcountCertaintySchema,
   inferredFieldSchema,
+  itemRoleSchema,
   parseDraft,
   removeEvent,
   removeItem,
   setBudget,
+  setItemOptions,
   setRequirements,
+  suggestItemOptions,
   upsertEvent,
   type WorkingDraft,
 } from "@/lib/builder/draft";
@@ -217,6 +221,11 @@ export function createAgentTools(
         inferred: z
           .array(inferredFieldSchema)
           .describe("Which values you inherited from another event rather than being told."),
+        headcountCertainty: headcountCertaintySchema
+          .optional()
+          .describe("Use 'estimated' when the inquiry hedges, e.g. 'around 30' or '12, maybe 14'."),
+        headcountMin: z.number().int().nullable().optional(),
+        headcountMax: z.number().int().nullable().optional(),
       }),
       execute: async (input) =>
         mutate((draft) => {
@@ -240,8 +249,14 @@ export function createAgentTools(
         eventId: z.string(),
         variationId: z.number().int().describe("From listContentLibrary."),
         note: z.string().optional().describe("Short note shown under the line."),
+        role: itemRoleSchema
+          .optional()
+          .describe(
+            "'core' is part of the offer; 'addon' is a value-added extra such as spa access, " +
+              "a tour, late checkout or extra AV. Add-ons become optional and adjustable from zero.",
+          ),
       }),
-      execute: async ({ eventId, variationId, note }) => {
+      execute: async ({ eventId, variationId, note, role }) => {
         const library = await getContentLibrary();
 
         return mutate<DraftSummary | ToolError>(async (draft) => {
@@ -271,6 +286,7 @@ export function createAgentTools(
               eventId,
               product,
               note,
+              role,
             }),
           );
         });
@@ -281,6 +297,64 @@ export function createAgentTools(
       description: "Remove one selected product from the draft.",
       inputSchema: z.object({ id: z.string() }),
       execute: async ({ id }) => mutate((draft) => saveDraft(removeItem(draft, id))),
+    }),
+
+    setItemOptions: tool({
+      description:
+        "Change how an item is presented: whether the customer may deselect it (optional), " +
+        "whether they may change the quantity (flexible, with bounds), its role, or a note " +
+        "shown beside it. Set `origin` honestly — it decides whether the change takes effect.",
+      inputSchema: z.object({
+        itemId: z.string(),
+        origin: z
+          .enum(["manager_request", "agent_suggestion"])
+          .describe(
+            "'manager_request' when the manager explicitly asked for this change — it is " +
+              "applied immediately. 'agent_suggestion' when it is your own idea — it is shown " +
+              "on the card for the manager to apply or dismiss, and changes nothing until they do.",
+          ),
+        rationale: z
+          .string()
+          .describe("One short sentence on why. Shown beside a suggestion on the card."),
+        role: itemRoleSchema.optional(),
+        optional: z.boolean().optional(),
+        quantityEditable: z.boolean().optional(),
+        quantityMin: z
+          .number()
+          .nullable()
+          .optional()
+          .describe("Lowest quantity the customer may choose."),
+        quantityMax: z.number().nullable().optional(),
+        comment: z.string().optional().describe("A note shown to the customer on this line."),
+      }),
+      execute: async ({ itemId, origin, rationale, ...options }) =>
+        mutate<DraftSummary | ToolError>((draft) => {
+          if (!draft.items.some((item) => item.id === itemId)) {
+            return {
+              error: `No item with id "${itemId}" is on the draft. Call getWorkingDraft for the current item ids.`,
+            };
+          }
+
+          // Flexible with no bound is meaningless, and guessing a range on the
+          // manager's behalf is exactly what rule 18 forbids.
+          if (
+            options.quantityEditable === true &&
+            options.quantityMin == null &&
+            options.quantityMax == null
+          ) {
+            return {
+              error:
+                "A flexible quantity needs a minimum, a maximum, or both. Ask the manager for " +
+                "the range before calling this again.",
+            };
+          }
+
+          return saveDraft(
+            origin === "manager_request"
+              ? setItemOptions(draft, itemId, options)
+              : suggestItemOptions(draft, itemId, { ...options, rationale }),
+          );
+        }),
     }),
 
     setRequirements: tool({

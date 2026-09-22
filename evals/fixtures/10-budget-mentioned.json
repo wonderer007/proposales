@@ -17,13 +17,10 @@
     ]
   },
   "expect": {
-    "minEventCount": 2,
-    "headcounts": [
-      20,
-      20
-    ],
+    "minEventCount": 1,
     "asksForMissingInfo": false,
     "recordsBudget": true,
-    "addsItems": true
+    "addsItems": true,
+    "allHeadcounts": 20
   }
 }

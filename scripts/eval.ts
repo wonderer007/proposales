@@ -29,6 +29,8 @@ const fixtureSchema = z.object({
   id: z.string(),
   name: z.string(),
   today: z.string(),
+  /** Overrides the default opening message, for instruction-following cases. */
+  firstTurn: z.string().optional(),
   inquiry: z.object({
     contactName: z.string(),
     email: z.string(),
@@ -62,6 +64,19 @@ const fixtureSchema = z.object({
     repliesInSwedish: z.boolean().optional(),
     recordsBudget: z.boolean().optional(),
     resolvesRelativeDate: z.object({ weekday: z.number(), notBefore: z.string() }).optional(),
+    headcountIsEstimated: z.boolean().optional(),
+    recommendsFlexibleQuantity: z.boolean().optional(),
+    suggestionsNotApplied: z.boolean().optional(),
+    addonsOptionalOrUnmatched: z.boolean().optional(),
+    noPendingSuggestions: z.boolean().optional(),
+    appliedDirectly: z
+      .object({
+        optionalTitleContains: z.string(),
+        flexibleTitleContains: z.string(),
+        flexibleMin: z.number(),
+        flexibleMax: z.number(),
+      })
+      .optional(),
   }),
 });
 
@@ -262,6 +277,89 @@ function evaluate(
     );
   }
 
+  if (expected.headcountIsEstimated) {
+    const estimated = draft.events.some((event) => event.headcountCertainty === "estimated");
+    checks.push(
+      check(
+        "marks the headcount as estimated",
+        estimated,
+        draft.events.map((e) => e.headcountCertainty).join(","),
+      ),
+    );
+  }
+
+  if (expected.recommendsFlexibleQuantity) {
+    // Either it proposed one, or it applied one because the manager asked.
+    const suggested = draft.items.some((item) => item.suggested?.quantityEditable);
+    const applied = draft.items.some((item) => item.quantityEditable);
+    checks.push(check("recommends a flexible quantity", suggested || applied));
+  }
+
+  if (expected.suggestionsNotApplied) {
+    // An unprompted recommendation must wait for the manager.
+    const pending = draft.items.filter((item) => item.suggested !== null);
+    const appliedWithoutAsking = draft.items.filter(
+      (item) => item.quantityEditable && item.role === "core",
+    );
+    checks.push(
+      check(
+        "leaves its own recommendation as a suggestion",
+        pending.length > 0 && appliedWithoutAsking.length === 0,
+        `${pending.length} pending, ${appliedWithoutAsking.length} applied`,
+      ),
+    );
+  }
+
+  if (expected.addonsOptionalOrUnmatched) {
+    const addons = draft.items.filter((item) => item.role === "addon");
+    const unmatched = draft.requirements.filter((r) => r.status === "unmatched");
+    const addonsAreOptional = addons.every((item) => item.optional);
+
+    checks.push(
+      check(
+        "extras are optional add-ons or recorded as unmatched",
+        (addons.length > 0 && addonsAreOptional) || unmatched.length > 0,
+        `${addons.length} add-ons, ${unmatched.length} unmatched`,
+      ),
+    );
+  }
+
+  if (expected.noPendingSuggestions) {
+    const pending = draft.items.filter((item) => item.suggested !== null);
+    checks.push(
+      check("applies directly, with nothing left pending", pending.length === 0, `${pending.length} pending`),
+    );
+  }
+
+  if (expected.appliedDirectly) {
+    const spec = expected.appliedDirectly;
+    const optionalItem = draft.items.find((item) =>
+      item.title.toLowerCase().includes(spec.optionalTitleContains.toLowerCase()),
+    );
+    const flexibleItem = draft.items.find((item) =>
+      item.title.toLowerCase().includes(spec.flexibleTitleContains.toLowerCase()),
+    );
+
+    checks.push(
+      check(
+        `${spec.optionalTitleContains} is optional`,
+        optionalItem?.optional === true,
+        optionalItem ? `optional=${optionalItem.optional}` : "item not on the draft",
+      ),
+    );
+    checks.push(
+      check(
+        `${spec.flexibleTitleContains} is flexible ${spec.flexibleMin}–${spec.flexibleMax}`,
+        flexibleItem?.quantityEditable === true &&
+          flexibleItem.quantityMin === spec.flexibleMin &&
+          flexibleItem.quantityMax === spec.flexibleMax,
+        flexibleItem
+          ? `editable=${flexibleItem.quantityEditable} ${flexibleItem.quantityMin}-${flexibleItem.quantityMax}`
+          : "item not on the draft",
+      ),
+    );
+  }
+
   if (expected.resolvesRelativeDate) {
     const { weekday, notBefore } = expected.resolvesRelativeDate;
     const date = draft.events[0]?.date ?? null;
@@ -287,7 +385,7 @@ async function runFixture(fixture: Fixture, knownVariationIds: Set<number>) {
     system: buildSystemPrompt({ inquiry, draft: emptyDraft(fixture.inquiry.language), today: fixture.today }),
     tools: createAgentTools(inquiry.id, store),
     stopWhen: stepCountIs(12),
-    messages: [{ role: "user", content: FIRST_TURN }],
+    messages: [{ role: "user", content: fixture.firstTurn ?? FIRST_TURN }],
   });
 
   const draft = await store.load();

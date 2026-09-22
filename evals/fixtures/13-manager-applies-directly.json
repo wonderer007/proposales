@@ -1,0 +1,27 @@
+{
+  "id": "13-manager-applies-directly",
+  "name": "Direct instruction applies immediately, no suggestion state",
+  "today": "2026-09-22",
+  "firstTurn": "Set up a meeting with lunch and a PA system for 50 people, then make the PA system optional and let them pick between 40 and 60 lunches.",
+  "inquiry": {
+    "contactName": "Marcus Hale",
+    "email": "marcus.hale@brightloop.com",
+    "companyName": "Brightloop Ltd",
+    "language": "en",
+    "message": "Request from the website:\nType: Company meeting with lunch\nGuests: 50\nDate: 5 November 2026\nMeeting: 09:00-12:00\nLunch: 12:00-13:00\nNotes: We would like a PA system for the presentations.",
+    "events": [
+      { "date": "2026-11-05", "startTime": "09:00", "endTime": "12:00" },
+      { "date": "2026-11-05", "startTime": "12:00", "endTime": "13:00" }
+    ]
+  },
+  "expect": {
+    "minEventCount": 2,
+    "appliedDirectly": {
+      "optionalTitleContains": "PA system",
+      "flexibleTitleContains": "Lunch",
+      "flexibleMin": 40,
+      "flexibleMax": 60
+    },
+    "noPendingSuggestions": true
+  }
+}

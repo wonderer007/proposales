@@ -1,0 +1,20 @@
+{
+  "id": "12-value-added-service",
+  "name": "Value-added service — optional and flexible, or unmatched",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Oskar Lind",
+    "email": "oskar@lindgruppen.se",
+    "companyName": "Lind Gruppen",
+    "language": "en",
+    "message": "Two-day management retreat on 24 and 25 November for 16 people, 09:00-17:00 each day. They would also like a guided walking tour of the old town on the first evening, and spa access if you offer it.",
+    "events": [
+      { "date": "2026-11-24", "endDate": "2026-11-25", "startTime": "09:00", "endTime": "17:00" }
+    ]
+  },
+  "expect": {
+    "minEventCount": 1,
+    "allHeadcounts": 16,
+    "addonsOptionalOrUnmatched": true
+  }
+}

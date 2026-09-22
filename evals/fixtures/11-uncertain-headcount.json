@@ -1,0 +1,27 @@
+{
+  "id": "11-uncertain-headcount",
+  "name": "Uncertain headcount \u2014 recommend a flexible quantity",
+  "today": "2026-09-22",
+  "inquiry": {
+    "contactName": "Nina Falk",
+    "email": "nina.falk@orbitstudio.se",
+    "companyName": "Orbit Studio",
+    "language": "en",
+    "message": "We need a meeting room with lunch on 19 November, 09:00-16:00. We'll be 12, maybe 14 \u2014 the last two are still deciding.",
+    "events": [
+      {
+        "date": "2026-11-19",
+        "startTime": "09:00",
+        "endTime": "16:00"
+      }
+    ]
+  },
+  "expect": {
+    "minEventCount": 1,
+    "asksForMissingInfo": false,
+    "headcountIsEstimated": true,
+    "recommendsFlexibleQuantity": true,
+    "suggestionsNotApplied": true
+  },
+  "firstTurn": "Use the Vasa Room and the Lunch buffet for this inquiry."
+}
