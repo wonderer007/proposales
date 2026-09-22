@@ -1,10 +1,11 @@
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { z } from "zod";
 
 import { env } from "@/env";
 import { buildSystemPrompt } from "@/lib/agent/prompt";
+import { createAgentTools } from "@/lib/agent/tools";
 import { parseDraft } from "@/lib/builder/draft";
-import { getInquiryWithEvents, saveMessages } from "@/lib/db/queries";
+import { getActiveProposal, getInquiryWithEvents, saveMessages } from "@/lib/db/queries";
 
 export const maxDuration = 60;
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   }
 
   const draft = parseDraft(inquiry.workingDraft, inquiry.language);
+  const active = await getActiveProposal(inquiryId);
 
   const result = streamText({
     model: env.AI_MODEL,
@@ -43,7 +45,15 @@ export async function POST(request: Request) {
       inquiry,
       draft,
       today: new Date().toISOString().slice(0, 10),
+      activeProposal: active
+        ? { version: active.version, status: active.status, snapshot: active.snapshot }
+        : null,
     }),
+    // Scoped to this inquiry by closure; the model never supplies the id.
+    tools: createAgentTools(inquiryId),
+    // Enough steps to look up the library, build several events and reply,
+    // but bounded so a confused loop cannot run away.
+    stopWhen: stepCountIs(12),
     messages: await convertToModelMessages(messages),
   });
 

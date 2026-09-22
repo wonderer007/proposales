@@ -2,19 +2,23 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { ArrowUp, RefreshCw, Square } from "lucide-react";
+import { ArrowUp, Check, RefreshCw, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { toolActivity } from "@/components/chat/tool-activity";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "cn";
 
 function messageText(message: UIMessage): string {
+  // A reply that pauses for tool calls arrives as several text parts. Joined
+  // with nothing they run together mid-sentence, so separate them.
   return message.parts
     .filter((part) => part.type === "text")
-    .map((part) => (part as { text: string }).text)
-    .join("");
+    .map((part) => (part as { text: string }).text.trim())
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 export function InquiryChat({
@@ -62,28 +66,44 @@ export function InquiryChat({
             Ask what the customer needs — for example “What should we offer for this inquiry?”
           </p>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex",
-                message.role === "user" ? "justify-end" : "justify-start",
-              )}
-            >
+          messages.map((message) => {
+            const activity = message.role === "assistant" ? toolActivity(message) : [];
+            const text = messageText(message);
+
+            return (
               <div
+                key={message.id}
                 className={cn(
-                  "max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted",
+                  "flex flex-col gap-1.5",
+                  message.role === "user" ? "items-end" : "items-start",
                 )}
               >
-                {messageText(message) || (
-                  <span className="text-muted-foreground italic">…</span>
-                )}
+                {activity.length > 0 ? (
+                  <ul className="text-muted-foreground space-y-0.5 text-xs">
+                    {activity.map((line, index) => (
+                      <li key={`${line}-${index}`} className="flex items-center gap-1.5">
+                        <Check className="size-3 shrink-0" aria-hidden />
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {text || activity.length === 0 ? (
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted",
+                    )}
+                  >
+                    {text || <span className="text-muted-foreground italic">…</span>}
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {status === "submitted" ? (
