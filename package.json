@@ -15,8 +15,10 @@
     "content:seed": "bun run scripts/seed-content.ts"
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.112",
     "@hookform/resolvers": "^5.9.1",
     "@neondatabase/serverless": "^1.1.0",
+    "ai": "^7.0.109",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "date-fns": "^4.4.0",

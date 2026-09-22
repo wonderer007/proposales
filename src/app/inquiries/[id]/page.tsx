@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { InquiryHeader } from "@/components/inquiry-header";
+import { InquiryChat } from "@/components/chat/inquiry-chat";
 import { PageHeader } from "@/components/page-header";
 import { ProposalPanel } from "@/components/proposal-panel";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { parseDraft } from "@/lib/builder/draft";
 import { checkReadiness } from "@/lib/builder/readiness";
 import { getContentLibrary } from "@/lib/content/library";
-import { getActiveProposal, getInquiryWithEvents, getProposalsForInquiry } from "@/lib/db/queries";
+import {
+  getActiveProposal,
+  getInquiryWithEvents,
+  getMessages,
+  getProposalsForInquiry,
+} from "@/lib/db/queries";
 import { formatTimestamp } from "@/lib/format";
 import { refreshProposalStatuses } from "@/lib/proposals/refresh";
 
@@ -28,9 +34,10 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
 
   // Best effort; a Proposales outage must not take the page down.
   await refreshProposalStatuses(id);
-  const [proposals, activeProposal] = await Promise.all([
+  const [proposals, activeProposal, chatHistory] = await Promise.all([
     getProposalsForInquiry(id),
     getActiveProposal(id),
+    getMessages(id),
   ]);
 
   const draft = parseDraft(inquiry.workingDraft, inquiry.language);
@@ -89,10 +96,8 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
                 Chat that shortlists products from the content library.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-1 flex-col">
-              <p className="text-muted-foreground flex flex-1 items-center justify-center rounded-lg border border-dashed px-4 py-12 text-center text-sm">
-                Coming in D9.
-              </p>
+            <CardContent className="flex min-h-0 flex-1 flex-col">
+              <InquiryChat inquiryId={inquiry.id} initialMessages={chatHistory} />
             </CardContent>
           </Card>
         </div>
