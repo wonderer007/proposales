@@ -46,7 +46,7 @@ export function ProposalHistory({ proposals }: { proposals: Proposal[] }) {
 
                 return (
                   <TableRow key={proposal.id} className={cn(superseded && "opacity-55")}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium tabular-nums">
                       v{proposal.version}
                       {superseded ? (
                         <span className="text-muted-foreground ml-2 text-xs">superseded</span>
@@ -57,7 +57,7 @@ export function ProposalHistory({ proposals }: { proposals: Proposal[] }) {
                         {proposal.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground tabular-nums">
                       {formatTimestamp(proposal.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">

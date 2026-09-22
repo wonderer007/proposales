@@ -1,10 +1,9 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 import { RetrySyncButton } from "@/components/retry-sync-button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InquiryWithEvents } from "@/lib/db/queries";
-import { formatDateRange, formatTime, formatTimestamp } from "@/lib/format";
+import { formatDateRange, formatTime } from "@/lib/format";
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -15,39 +14,37 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
+/**
+ * The customer's request as it arrived. The contact name is the page title
+ * (rendered by the route), so this card starts with the details.
+ */
 export function InquiryHeader({ inquiry }: { inquiry: InquiryWithEvents }) {
   return (
     <Card>
-      <CardHeader className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <CardTitle className="text-xl">{inquiry.contactName}</CardTitle>
-          {inquiry.companyName ? (
-            <p className="text-muted-foreground text-sm">{inquiry.companyName}</p>
-          ) : null}
-        </div>
-        <Badge variant="outline">{inquiry.language === "sv" ? "Svenska" : "English"}</Badge>
+      <CardHeader>
+        <CardTitle>Inquiry</CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <dl className="grid gap-4 sm:grid-cols-3">
+        <dl className="grid gap-4 sm:grid-cols-2">
           <Detail label="Email">
-            <a className="hover:underline" href={`mailto:${inquiry.email}`}>
+            <a className="break-all hover:underline" href={`mailto:${inquiry.email}`}>
               {inquiry.email}
             </a>
           </Detail>
-          <Detail label="Phone">{inquiry.phone ?? "—"}</Detail>
-          <Detail label="Received">{formatTimestamp(inquiry.createdAt)}</Detail>
+          <Detail label="Phone">
+            {inquiry.phone ? <span className="tabular-nums">{inquiry.phone}</span> : "—"}
+          </Detail>
         </dl>
 
         <div className="space-y-2">
           <h3 className="text-muted-foreground text-xs">Requested dates</h3>
           {inquiry.events.length > 0 ? (
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {inquiry.events.map((event) => (
-                <li key={event.id} className="text-sm">
-                  {formatDateRange(event.date, event.endDate)}
-                  <span className="text-muted-foreground">
-                    {" · "}
+                <li key={event.id} className="flex flex-wrap items-baseline gap-x-3 text-sm">
+                  <span>{formatDateRange(event.date, event.endDate)}</span>
+                  <span className="text-muted-foreground tabular-nums">
                     {formatTime(event.startTime)}–{formatTime(event.endTime)}
                   </span>
                 </li>
@@ -60,7 +57,7 @@ export function InquiryHeader({ inquiry }: { inquiry: InquiryWithEvents }) {
 
         <div className="space-y-2">
           <h3 className="text-muted-foreground text-xs">Message</h3>
-          <p className="text-sm whitespace-pre-wrap">{inquiry.message}</p>
+          <p className="max-w-prose text-sm leading-relaxed whitespace-pre-wrap">{inquiry.message}</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
@@ -68,7 +65,7 @@ export function InquiryHeader({ inquiry }: { inquiry: InquiryWithEvents }) {
             <p className="flex items-center gap-2 text-sm">
               <CheckCircle2 className="size-4 text-emerald-600" aria-hidden />
               Mirrored to Proposales as RFP{" "}
-              <span className="font-medium">#{inquiry.rfpId}</span>
+              <span className="font-medium tabular-nums">#{inquiry.rfpId}</span>
             </p>
           ) : (
             <div className="space-y-1">

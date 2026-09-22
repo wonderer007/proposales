@@ -1,18 +1,20 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { InquiryHeader } from "@/components/inquiry-header";
+import { PageHeader } from "@/components/page-header";
 import { ProposalHistory } from "@/components/proposal-history";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInquiryWithEvents, getProposalsForInquiry } from "@/lib/db/queries";
+import { formatTimestamp } from "@/lib/format";
 import { refreshProposalStatuses } from "@/lib/proposals/refresh";
 
 export async function generateMetadata({ params }: PageProps<"/inquiries/[id]">) {
   const { id } = await params;
   const inquiry = await getInquiryWithEvents(id);
 
-  return { title: inquiry ? `${inquiry.contactName} — Inquiry` : "Inquiry" };
+  // The root layout's title template appends the app name.
+  return { title: inquiry ? inquiry.contactName : "Inquiry" };
 }
 
 export default async function InquiryDetailPage({ params }: PageProps<"/inquiries/[id]">) {
@@ -27,9 +29,21 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
-      <Button asChild variant="link" className="mb-2 h-auto p-0 text-sm">
-        <Link href="/">← Back to inquiries</Link>
-      </Button>
+      <PageHeader
+        back={{ href: "/", label: "Inquiries" }}
+        title={inquiry.contactName}
+        description={
+          <>
+            {inquiry.companyName ? `${inquiry.companyName}, received ` : "Received "}
+            <time dateTime={inquiry.createdAt.toISOString()} className="tabular-nums">
+              {formatTimestamp(inquiry.createdAt)}
+            </time>
+          </>
+        }
+        actions={
+          <Badge variant="outline">{inquiry.language === "sv" ? "Svenska" : "English"}</Badge>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">

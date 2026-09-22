@@ -19,6 +19,31 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-destructive text-xs">{message}</p>;
 }
 
+/** Most fields are required, so the two that aren't say so instead. */
+function Optional() {
+  return <span className="text-muted-foreground font-normal">Optional</span>;
+}
+
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="grid gap-4 sm:grid-cols-[11rem_1fr] sm:gap-8">
+      <div className="space-y-1">
+        <h2 className="text-base leading-snug font-semibold">{title}</h2>
+        <p className="text-muted-foreground text-sm leading-normal">{description}</p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
+  );
+}
+
 export function InquiryForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -61,17 +86,18 @@ export function InquiryForm() {
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" noValidate>
-      <section className="space-y-4">
-        <h2 className="text-sm font-medium">Contact</h2>
-
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="divide-border space-y-8 *:not-first:pt-8 *:not-first:border-t"
+      noValidate
+    >
+      <FormSection title="Contact" description="Who sent the request, and how to reach them.">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="contactName">
-              Contact name <span className="text-destructive">*</span>
-            </Label>
+            <Label htmlFor="contactName">Contact name</Label>
             <Input
               id="contactName"
+              autoComplete="name"
               {...form.register("contactName")}
               aria-invalid={!!errors.contactName}
             />
@@ -79,12 +105,11 @@ export function InquiryForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">
-              Email <span className="text-destructive">*</span>
-            </Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               {...form.register("email")}
               aria-invalid={!!errors.email}
             />
@@ -92,27 +117,27 @@ export function InquiryForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" {...form.register("phone")} />
+            <Label htmlFor="phone">
+              Phone <Optional />
+            </Label>
+            <Input id="phone" type="tel" autoComplete="tel" {...form.register("phone")} />
             <FieldError message={errors.phone?.message} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="companyName">Company</Label>
-            <Input id="companyName" {...form.register("companyName")} />
+            <Label htmlFor="companyName">
+              Company <Optional />
+            </Label>
+            <Input id="companyName" autoComplete="organization" {...form.register("companyName")} />
             <FieldError message={errors.companyName?.message} />
           </div>
         </div>
-      </section>
+      </FormSection>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-medium">When</h2>
-
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="min-w-64 flex-1 space-y-2">
-            <Label>
-              Dates <span className="text-destructive">*</span>
-            </Label>
+      <FormSection title="When" description="The dates and hours the customer asked for.">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Dates</Label>
             <DateRangeField
               startDate={range?.startDate ?? ""}
               endDate={range?.endDate ?? ""}
@@ -127,61 +152,66 @@ export function InquiryForm() {
             />
           </div>
 
-          <div className="w-32 space-y-2">
-            <Label htmlFor="startTime">
-              Start <span className="text-destructive">*</span>
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="startTime">Start</Label>
             <Input
               id="startTime"
               type="time"
+              className="tabular-nums"
               {...form.register("range.startTime")}
               aria-invalid={!!errors.range?.startTime}
             />
             <FieldError message={errors.range?.startTime?.message} />
           </div>
 
-          <div className="w-32 space-y-2">
-            <Label htmlFor="endTime">
-              End <span className="text-destructive">*</span>
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="endTime">End</Label>
             <Input
               id="endTime"
               type="time"
+              className="tabular-nums"
               {...form.register("range.endTime")}
               aria-invalid={!!errors.range?.endTime}
             />
             <FieldError message={errors.range?.endTime?.message} />
           </div>
         </div>
-      </section>
+      </FormSection>
 
-      <section className="space-y-2">
-        <Label htmlFor="message">
-          Message <span className="text-destructive">*</span>
-        </Label>
-        <Textarea
-          id="message"
-          rows={6}
-          placeholder="What is the customer asking for?"
-          {...form.register("message")}
-          aria-invalid={!!errors.message}
-        />
-        <FieldError message={errors.message?.message} />
-      </section>
+      <FormSection
+        title="Request"
+        description="The customer's message, in their own words. The assistant reads this to build the shortlist."
+      >
+        <div className="space-y-2">
+          <Label htmlFor="message">Message</Label>
+          <Textarea
+            id="message"
+            // The primitive uses field-sizing: content, which ignores `rows`;
+            // give the field a real starting height since it grows with input.
+            className="min-h-36 leading-relaxed"
+            placeholder="What is the customer asking for?"
+            {...form.register("message")}
+            aria-invalid={!!errors.message}
+          />
+          <FieldError message={errors.message?.message} />
+        </div>
+      </FormSection>
 
-      {formError ? (
-        <p className="text-destructive text-sm" role="alert">
-          {formError}
-        </p>
-      ) : null}
+      <div className="space-y-4">
+        {formError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {formError}
+          </p>
+        ) : null}
 
-      <div className="flex gap-3">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : "Create inquiry"}
-        </Button>
-        <Button type="button" variant="ghost" onClick={() => router.push("/")} disabled={isPending}>
-          Cancel
-        </Button>
+        <div className="flex gap-3 sm:pl-[calc(11rem+2rem)]">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Saving…" : "Create inquiry"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => router.push("/")} disabled={isPending}>
+            Cancel
+          </Button>
+        </div>
       </div>
     </form>
   );

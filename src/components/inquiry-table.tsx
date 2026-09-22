@@ -13,17 +13,21 @@ import type { InquiryListRow } from "@/lib/db/queries";
 import { formatDateCompact, formatTimestamp } from "@/lib/format";
 import { INQUIRY_STATUS_VARIANT, deriveInquiryStatus } from "@/lib/inquiry-status";
 
+/**
+ * Columns fold into the Contact cell as the viewport narrows, so the table
+ * never needs a horizontal scroll to reach the status or the row link.
+ */
 export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Contact</TableHead>
-          <TableHead>Email</TableHead>
+          <TableHead className="pl-4">Contact</TableHead>
+          <TableHead className="hidden md:table-cell">Email</TableHead>
           <TableHead>First event</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Proposal</TableHead>
-          <TableHead className="text-right">Created</TableHead>
+          <TableHead className="hidden lg:table-cell">Proposal</TableHead>
+          <TableHead className="hidden pr-4 text-right sm:table-cell">Created</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -33,7 +37,7 @@ export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
 
           return (
             <TableRow key={inquiry.id} className="hover:bg-muted/50 relative">
-              <TableCell className="font-medium">
+              <TableCell className="py-3 pl-4 font-medium">
                 {/* The whole row is clickable via this stretched link. */}
                 <Link
                   href={`/inquiries/${inquiry.id}`}
@@ -42,11 +46,18 @@ export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
                   {inquiry.contactName}
                 </Link>
                 {inquiry.companyName ? (
-                  <span className="text-muted-foreground block text-xs">{inquiry.companyName}</span>
+                  <span className="text-muted-foreground block text-xs font-normal">
+                    {inquiry.companyName}
+                  </span>
                 ) : null}
+                <span className="text-muted-foreground block text-xs font-normal md:hidden">
+                  {inquiry.email}
+                </span>
               </TableCell>
-              <TableCell className="text-muted-foreground">{inquiry.email}</TableCell>
-              <TableCell>
+              <TableCell className="text-muted-foreground hidden md:table-cell">
+                {inquiry.email}
+              </TableCell>
+              <TableCell className="tabular-nums">
                 {inquiry.firstEventDate ? (
                   formatDateCompact(inquiry.firstEventDate)
                 ) : (
@@ -58,10 +69,10 @@ export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
                   {status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground hidden lg:table-cell">
                 {inquiry.activeProposalStatus ?? "—"}
               </TableCell>
-              <TableCell className="text-muted-foreground text-right">
+              <TableCell className="text-muted-foreground hidden pr-4 text-right tabular-nums sm:table-cell">
                 {formatTimestamp(inquiry.createdAt)}
               </TableCell>
             </TableRow>
