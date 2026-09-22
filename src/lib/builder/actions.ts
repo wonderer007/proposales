@@ -80,11 +80,3 @@ export async function removeDraftItem(
 export async function dismissFlag(inquiryId: string, flagId: string): Promise<BuilderResult> {
   return updateDraft(inquiryId, (draft) => clearFlag(draft, flagId));
 }
-
-/**
- * Placeholder for the create/update/version action built in D11. It exists so
- * the button's wiring, pending state and error handling can be exercised now.
- */
-export async function submitProposal(): Promise<BuilderResult> {
-  return { ok: false, error: "Creating proposals arrives in D11." };
-}

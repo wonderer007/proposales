@@ -230,7 +230,7 @@ export function ProposalBuilder({
       </section>
 
       <section className="space-y-2">
-        <SubmitProposalButton label={label} disabled={!readiness.ready} />
+        <SubmitProposalButton inquiryId={inquiryId} label={label} disabled={!readiness.ready} />
 
         {!readiness.ready ? (
           <ul className="text-muted-foreground space-y-0.5 text-xs">
