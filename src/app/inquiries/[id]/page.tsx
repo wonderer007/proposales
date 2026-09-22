@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { InquiryHeader } from "@/components/inquiry-header";
 import { PageHeader } from "@/components/page-header";
-import { ProposalHistory } from "@/components/proposal-history";
+import { ProposalPanel } from "@/components/proposal-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInquiryWithEvents, getProposalsForInquiry } from "@/lib/db/queries";
@@ -45,35 +45,28 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/*
+        Two columns on desktop. The assistant is where the manager spends the
+        session, so it gets the wider column and stays pinned while the
+        inquiry and proposal panel scroll past on the left.
+      */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <div className="space-y-6">
           <InquiryHeader inquiry={inquiry} />
-          <ProposalHistory proposals={proposals} />
+          <ProposalPanel proposals={proposals} />
         </div>
 
-        <div className="space-y-6">
-          <Card>
+        <div className="lg:sticky lg:top-6 lg:self-start">
+          <Card className="flex flex-col lg:h-[calc(100dvh-6rem)] lg:min-h-[32rem]">
             <CardHeader>
-              <CardTitle className="text-base">Assistant</CardTitle>
+              <CardTitle>Assistant</CardTitle>
               <CardDescription>
                 Chat that shortlists products from the content library.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-12 text-center text-sm">
+            <CardContent className="flex flex-1 flex-col">
+              <p className="text-muted-foreground flex flex-1 items-center justify-center rounded-lg border border-dashed px-4 py-12 text-center text-sm">
                 Coming in D9.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Proposal builder</CardTitle>
-              <CardDescription>The working draft, and the button that creates it.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-12 text-center text-sm">
-                Coming in D8.
               </p>
             </CardContent>
           </Card>
