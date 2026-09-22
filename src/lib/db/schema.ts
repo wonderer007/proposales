@@ -56,10 +56,13 @@ export const inquiryEvents = pgTable(
     inquiryId: uuid("inquiry_id")
       .notNull()
       .references(() => inquiries.id, { onDelete: "cascade" }),
-    /** ISO `YYYY-MM-DD`. */
+    /** First day of the range, ISO `YYYY-MM-DD`. */
     date: date("date", { mode: "string" }).notNull(),
-    /** `HH:mm`, stored as Postgres `time`. */
+    /** Last day of the range; null when the range is a single day. */
+    endDate: date("end_date", { mode: "string" }),
+    /** `HH:mm` on the first day, stored as Postgres `time`. */
     startTime: time("start_time").notNull(),
+    /** `HH:mm` on the last day. */
     endTime: time("end_time").notNull(),
     position: integer("position").notNull(),
   },

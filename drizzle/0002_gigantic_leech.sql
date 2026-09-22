@@ -1,0 +1,1 @@
+ALTER TABLE "inquiry_events" ADD COLUMN "end_date" date;

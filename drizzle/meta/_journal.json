@@ -15,6 +15,13 @@
       "when": 1790081705861,
       "tag": "0001_flippant_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790085881129,
+      "tag": "0002_gigantic_leech",
+      "breakpoints": true
     }
   ]
 }
