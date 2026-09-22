@@ -6,6 +6,7 @@ import { ArrowUp, Check, RefreshCw, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { Markdown } from "@/components/chat/markdown";
 import { toolActivity } from "@/components/chat/tool-activity";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,13 +93,19 @@ export function InquiryChat({
                 {text || activity.length === 0 ? (
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
+                      "max-w-[85%] rounded-lg px-3 py-2 text-sm",
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-primary-foreground whitespace-pre-wrap"
                         : "bg-muted",
                     )}
                   >
-                    {text || <span className="text-muted-foreground italic">…</span>}
+                    {text ? (
+                      // The manager's own text is shown as typed; only the
+                      // assistant writes markdown.
+                      message.role === "assistant" ? <Markdown>{text}</Markdown> : text
+                    ) : (
+                      <span className="text-muted-foreground italic">…</span>
+                    )}
                   </div>
                 ) : null}
               </div>
