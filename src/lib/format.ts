@@ -60,3 +60,14 @@ export function formatTime(value: string): string {
   const match = /^(\d{2}):(\d{2})/.exec(value);
   return match ? `${match[1]}:${match[2]}` : value;
 }
+
+/**
+ * Renders an event's date range with weekdays, e.g.
+ * "Monday, 12 October 2026 → Wednesday, 14 October 2026", or a single date
+ * when the range covers one day.
+ */
+export function formatDateRange(date: string, endDate?: string | null): string {
+  if (!endDate || endDate === date) return formatDate(date);
+
+  return `${formatDate(date)} → ${formatDate(endDate)}`;
+}

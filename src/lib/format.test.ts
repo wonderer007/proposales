@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatDate, formatDateCompact, formatTime, formatTimestamp } from "./format";
+import {
+  formatDate,
+  formatDateCompact,
+  formatDateRange,
+  formatTime,
+  formatTimestamp,
+} from "./format";
 
 describe("formatDate", () => {
   test("renders the weekday, as the spec requires", () => {
@@ -38,5 +44,18 @@ describe("formatTime", () => {
 
   test("leaves an already-short time alone", () => {
     expect(formatTime("09:00")).toBe("09:00");
+  });
+});
+
+describe("formatDateRange", () => {
+  test("shows one date when the range is a single day", () => {
+    expect(formatDateRange("2026-10-12", null)).toBe("Monday, 12 October 2026");
+    expect(formatDateRange("2026-10-12", "2026-10-12")).toBe("Monday, 12 October 2026");
+  });
+
+  test("shows both ends of a multi-day range", () => {
+    expect(formatDateRange("2026-10-12", "2026-10-14")).toBe(
+      "Monday, 12 October 2026 → Wednesday, 14 October 2026",
+    );
   });
 });
