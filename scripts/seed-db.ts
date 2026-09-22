@@ -6,11 +6,72 @@
  */
 import { inArray } from "drizzle-orm";
 
+import { addFlag, addItem, emptyDraft, setRequirements, upsertEvent } from "@/lib/builder/draft";
+import type { CatalogProduct, WorkingDraft } from "@/lib/builder/draft";
 import { db } from "@/lib/db/client";
 import { inquiries, inquiryEvents } from "@/lib/db/schema";
 import type { NewInquiry, NewInquiryEvent } from "@/lib/db/schema";
 
 type Seed = { inquiry: NewInquiry; events: Omit<NewInquiryEvent, "inquiryId">[] };
+
+/**
+ * A hand-crafted working draft for the Brightloop inquiry, so the Proposal
+ * Builder card has something to render before the agent exists.
+ *
+ * Variation ids come from `scripts/seed-content.ts`; if you reseed the content
+ * library into a different company they will need updating.
+ */
+const VASA_ROOM: CatalogProduct = {
+  productId: 189_236, variationId: 189_235, title: "Vasa Room", unit: "day",
+  contentType: "meetingRoom", unitPriceMinor: 85_000, vatRate: 0.25, currency: "EUR",
+};
+
+const PROJECTOR: CatalogProduct = {
+  productId: 189_249, variationId: 189_248, title: "Projector and screen", unit: "unit",
+  contentType: "other", unitPriceMinor: 4_500, vatRate: 0.25, currency: "EUR",
+};
+
+const LUNCH_BUFFET: CatalogProduct = {
+  productId: 189_241, variationId: 189_240, title: "Lunch buffet", unit: "person",
+  contentType: "food", unitPriceMinor: 3_200, vatRate: 0.12, currency: "EUR",
+};
+
+export function sampleDraft(): WorkingDraft {
+  let draft = emptyDraft("en");
+
+  draft = upsertEvent(draft, {
+    id: "evt-meeting", type: "meeting", label: "Company meeting",
+    date: "2026-11-05", startTime: "09:00", endTime: "12:00", headcount: 50,
+    inferred: [],
+  });
+
+  // The lunch inherits its date and headcount from the meeting.
+  draft = upsertEvent(draft, {
+    id: "evt-lunch", type: "lunch", label: "Lunch",
+    date: "2026-11-05", startTime: "12:00", endTime: "13:00", headcount: 50,
+    inferred: ["date", "headcount"],
+  });
+
+  draft = addItem(draft, { id: "itm-room", eventId: "evt-meeting", product: VASA_ROOM });
+  draft = addItem(draft, { id: "itm-projector", eventId: "evt-meeting", product: PROJECTOR });
+  draft = addItem(draft, {
+    id: "itm-lunch", eventId: "evt-lunch", product: LUNCH_BUFFET,
+    note: "Vegetarian and vegan options included",
+  });
+
+  draft = setRequirements(draft, [
+    { id: "req-screen", text: "Screen for presentations", status: "matched", itemId: "itm-projector" },
+    { id: "req-vegetarian", text: "Vegetarian option at lunch", status: "unmatched" },
+  ]);
+
+  return addFlag(draft, {
+    id: "flag-capacity",
+    severity: "warning",
+    message: "Capacity not verified for Vasa Room — the description says 25 boardroom, 40 theatre.",
+    eventId: "evt-meeting",
+    itemId: "itm-room",
+  });
+}
 
 const SEEDS: Seed[] = [
   {
@@ -44,6 +105,7 @@ const SEEDS: Seed[] = [
       phone: "+44 20 7946 0102",
       companyName: "Brightloop Ltd",
       language: "en",
+      workingDraft: sampleDraft(),
       message:
         "Request from the website:\n" +
         "Type: Company meeting with lunch\n" +
