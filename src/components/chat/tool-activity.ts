@@ -19,11 +19,15 @@ function draftItems(output: unknown): { id: string; title: string; quantity: num
   return Array.isArray(items) ? (items as { id: string; title: string; quantity: number }[]) : [];
 }
 
-export function describeToolCall(part: ToolPart): string | null {
+/** A call still running is described in the present tense, so the line reads
+ * as activity rather than as something already finished. */
+export function describeToolCall(part: ToolPart, done = true): string | null {
   const name = part.type.startsWith("tool-") ? part.type.slice("tool-".length) : null;
   if (!name) return null;
 
   const input = part.input ?? {};
+
+  if (!done) return progressLabel(name, input);
 
   switch (name) {
     case "listContentLibrary":
@@ -72,16 +76,52 @@ export function describeToolCall(part: ToolPart): string | null {
   }
 }
 
-/** Every tool line in one assistant message, in order. */
-export function toolActivity(message: UIMessage): string[] {
-  return message.parts
-    .flatMap((part) => {
-      const candidate = part as ToolPart;
-      if (!candidate.type?.startsWith("tool-")) return [];
-      // Only describe calls that finished, so lines do not flicker mid-stream.
-      if (candidate.state && !candidate.state.includes("output")) return [];
+/** Present-tense label for a call that is still running. */
+function progressLabel(name: string, input: Record<string, unknown>): string {
+  switch (name) {
+    case "listContentLibrary":
+      return input.type
+        ? `Looking up ${String(input.type)} products`
+        : "Looking up the content library";
+    case "getWorkingDraft":
+      return "Checking the draft";
+    case "upsertEvent":
+      return `${input.id ? "Updating" : "Adding"} an event`;
+    case "removeEvent":
+      return "Removing an event";
+    case "addItem":
+      return "Adding a product";
+    case "removeItem":
+      return "Removing a product";
+    case "setRequirements":
+      return "Recording requirements";
+    case "addFlag":
+      return "Raising a warning";
+    case "clearFlag":
+      return "Clearing a warning";
+    case "setBudget":
+      return "Noting the budget";
+    default:
+      return "Working";
+  }
+}
 
-      const line = describeToolCall(candidate);
-      return line ? [line] : [];
-    });
+export type ActivityLine = { text: string; done: boolean };
+
+/**
+ * Every tool line in one assistant message, in order.
+ *
+ * Calls still in flight are included so the chat never goes quiet while the
+ * agent is working — they simply read in the present tense.
+ */
+export function toolActivity(message: UIMessage): ActivityLine[] {
+  return message.parts.flatMap((part) => {
+    const candidate = part as ToolPart;
+    if (!candidate.type?.startsWith("tool-")) return [];
+
+    const done = candidate.state ? candidate.state.includes("output") : true;
+    const text = describeToolCall(candidate, done);
+
+    return text ? [{ text, done }] : [];
+  });
 }

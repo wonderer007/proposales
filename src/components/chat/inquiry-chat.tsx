@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { ArrowUp, Check, RefreshCw, Square } from "lucide-react";
+import { ArrowUp, Check, Loader2, RefreshCw, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -45,6 +45,19 @@ export function InquiryChat({
 
   const isStreaming = status === "streaming" || status === "submitted";
 
+  // Keep the manager informed for the whole turn: the agent may spend several
+  // seconds calling tools before any text arrives, and silence reads as a hang.
+  const lastMessage = messages.at(-1);
+  const workingLabel = (() => {
+    if (status === "submitted") return "Thinking…";
+    if (!lastMessage || lastMessage.role !== "assistant") return "Thinking…";
+
+    const running = toolActivity(lastMessage).find((line) => !line.done);
+    if (running) return `${running.text}…`;
+
+    return messageText(lastMessage) ? "Writing…" : "Thinking…";
+  })();
+
   // Keep the newest message in view as it streams.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -82,9 +95,13 @@ export function InquiryChat({
                 {activity.length > 0 ? (
                   <ul className="text-muted-foreground space-y-0.5 text-xs">
                     {activity.map((line, index) => (
-                      <li key={`${line}-${index}`} className="flex items-center gap-1.5">
-                        <Check className="size-3 shrink-0" aria-hidden />
-                        {line}
+                      <li key={`${line.text}-${index}`} className="flex items-center gap-1.5">
+                        {line.done ? (
+                          <Check className="size-3 shrink-0" aria-hidden />
+                        ) : (
+                          <Loader2 className="size-3 shrink-0 animate-spin" aria-hidden />
+                        )}
+                        {line.text}
                       </li>
                     ))}
                   </ul>
@@ -113,10 +130,10 @@ export function InquiryChat({
           })
         )}
 
-        {status === "submitted" ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <span className="bg-muted-foreground size-1.5 animate-pulse rounded-full" />
-            Thinking…
+        {isStreaming ? (
+          <div className="text-muted-foreground flex items-center gap-2 text-xs" aria-live="polite">
+            <Loader2 className="size-3 animate-spin" aria-hidden />
+            {workingLabel}
           </div>
         ) : null}
       </div>

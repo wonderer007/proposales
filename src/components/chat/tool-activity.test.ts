@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { describeToolCall } from "./tool-activity";
+import { describeToolCall, toolActivity } from "./tool-activity";
 
 describe("describeToolCall", () => {
   test("names an added product with its quantity", () => {
@@ -58,5 +58,47 @@ describe("describeToolCall", () => {
 
   test("ignores parts that are not tool calls", () => {
     expect(describeToolCall({ type: "text" })).toBeNull();
+  });
+});
+
+describe("in-flight calls", () => {
+  test("reads in the present tense while running", () => {
+    expect(describeToolCall({ type: "tool-addItem", input: {} }, false)).toBe("Adding a product");
+    expect(describeToolCall({ type: "tool-listContentLibrary", input: { type: "food" } }, false)).toBe(
+      "Looking up food products",
+    );
+    expect(describeToolCall({ type: "tool-upsertEvent", input: {} }, false)).toBe("Adding an event");
+    expect(describeToolCall({ type: "tool-upsertEvent", input: { id: "e1" } }, false)).toBe(
+      "Updating an event",
+    );
+  });
+});
+
+describe("toolActivity", () => {
+  test("includes running calls so the chat never goes quiet", () => {
+    const message = {
+      id: "m1",
+      role: "assistant" as const,
+      parts: [
+        {
+          type: "tool-listContentLibrary",
+          state: "output-available",
+          input: {},
+          output: { items: [] },
+        },
+        { type: "tool-addItem", state: "input-available", input: { variationId: 1 } },
+      ],
+    };
+
+    expect(toolActivity(message as never)).toEqual([
+      { text: "Looked up the content library", done: true },
+      { text: "Adding a product", done: false },
+    ]);
+  });
+
+  test("ignores non-tool parts", () => {
+    const message = { id: "m1", role: "assistant" as const, parts: [{ type: "text", text: "hi" }] };
+
+    expect(toolActivity(message as never)).toEqual([]);
   });
 });
