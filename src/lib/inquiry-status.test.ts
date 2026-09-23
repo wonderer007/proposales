@@ -13,7 +13,7 @@ describe("deriveInquiryStatus", () => {
     // Proposales has no "sent" — a proposal that has gone out is "active".
     expect(deriveInquiryStatus("active")).toBe("Sent");
     expect(deriveInquiryStatus("accepted")).toBe("Won");
-    expect(deriveInquiryStatus("rejected")).toBe("Lost");
+    expect(deriveInquiryStatus("rejected")).toBe("Rejected");
   });
 
   test("covers the statuses the spec does not name", () => {
@@ -28,7 +28,7 @@ describe("deriveInquiryStatus", () => {
   });
 
   test("every status has badge styling", () => {
-    for (const status of ["New", "Draft", "Sent", "Won", "Lost", "Expired", "Withdrawn"] as const) {
+    for (const status of ["New", "Draft", "Sent", "Won", "Rejected", "Expired", "Withdrawn"] as const) {
       expect(INQUIRY_STATUS_VARIANT[status]).toBeDefined();
     }
   });

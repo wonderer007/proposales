@@ -4,7 +4,7 @@ import type { ProposalStatus } from "@/lib/proposales/schemas";
  * Inquiry status shown in the list (SPEC §4.1). Derived from the active
  * proposal's status, never stored.
  */
-export type InquiryStatus = "New" | "Draft" | "Sent" | "Won" | "Lost" | "Expired" | "Withdrawn";
+export type InquiryStatus = "New" | "Draft" | "Sent" | "Won" | "Rejected" | "Expired" | "Withdrawn";
 
 /**
  * Maps the active proposal's Proposales status onto the inquiry status.
@@ -28,7 +28,7 @@ export function deriveInquiryStatus(proposalStatus: string | null | undefined): 
     case "accepted":
       return "Won";
     case "rejected":
-      return "Lost";
+      return "Rejected";
     case "expired":
       return "Expired";
     case "withdrawn":
@@ -50,7 +50,7 @@ export const INQUIRY_STATUS_VARIANT: Record<
     variant: "secondary",
     className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   },
-  Lost: { variant: "destructive" },
+  Rejected: { variant: "destructive" },
   Expired: { variant: "outline", className: "text-muted-foreground" },
   Withdrawn: { variant: "outline", className: "text-muted-foreground" },
 };
