@@ -35,9 +35,9 @@ export function OutreachRange({ from, to }: { from: string; to: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* The field's trigger is `w-full`, so it needs a width of its own here
-          or it pushes the button onto its own line. */}
-      <div className="w-64">
+      {/* The field's trigger is `w-full` and never wraps, so this wrapper must
+          grow with the range label or the label spills under the button. */}
+      <div className="max-w-full min-w-64">
         <DateRangeField
           startDate={range.startDate}
           endDate={range.endDate}
