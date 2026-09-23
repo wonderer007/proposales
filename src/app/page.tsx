@@ -1,75 +1,66 @@
+import { ArrowRight, Inbox, Radar } from "lucide-react";
 import Link from "next/link";
 
-import { InquiryPagination } from "@/components/inquiry-pagination";
-import { InquirySearch } from "@/components/inquiry-search";
-import { InquiryTable } from "@/components/inquiry-table";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { listInquiries } from "@/lib/db/queries";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Inquiries",
+  title: "Dashboard",
 };
 
-export default async function InquiryListPage({ searchParams }: PageProps<"/">) {
-  const params = await searchParams;
-  const rawQuery = params.q;
-  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery) ?? "";
+/**
+ * The way in to the app's two halves: the inbound inquiries you answer, and
+ * the past customers worth chasing.
+ */
+const SECTIONS = [
+  {
+    href: "/inquiries",
+    icon: Inbox,
+    title: "Inquiry Manager",
+    description:
+      "Requests from customers, the AI assistant that shortlists products, and the proposal built for each one.",
+  },
+  {
+    href: "/outreach",
+    icon: Radar,
+    title: "Outreach",
+    description:
+      "Past customers whose event is due round again, with their history and a drafted message to start the conversation.",
+  },
+];
 
-  const rawPage = params.page;
-  const page = Number(Array.isArray(rawPage) ? rawPage[0] : rawPage) || 1;
-
-  const { rows, total, page: current, pageCount } = await listInquiries({ q: query, page });
-  const isSearching = query.trim().length > 0;
-
+export default function DashboardPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
       <PageHeader
-        title="Inquiries"
-        description="Requests from customers, and the proposal built for each one."
-        actions={
-          <Button asChild>
-            <Link href="/inquiries/new">New inquiry</Link>
-          </Button>
-        }
+        title="Proposales Plus"
       />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <InquirySearch />
-        {isSearching ? (
-          <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
-            {total} {total === 1 ? "match" : "matches"}
-          </p>
-        ) : null}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {SECTIONS.map(({ href, icon: Icon, title, description }) => (
+          <Card key={href} className="hover:border-foreground/20 relative transition-colors">
+            <CardHeader>
+              <Icon className="text-muted-foreground mb-2 size-5" aria-hidden />
+              <CardTitle>
+                {/* The whole card is clickable via this stretched link. */}
+                <Link
+                  href={href}
+                  className="after:absolute after:inset-0 focus-visible:underline focus-visible:outline-none"
+                >
+                  {title}
+                </Link>
+              </CardTitle>
+              <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-muted-foreground inline-flex items-center gap-1 text-sm">
+                Open
+                <ArrowRight className="size-3.5" aria-hidden />
+              </span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
-
-      {rows.length > 0 ? (
-        <>
-          <div className="overflow-hidden rounded-lg border">
-            <InquiryTable inquiries={rows} />
-          </div>
-          <InquiryPagination page={current} pageCount={pageCount} total={total} query={query} />
-        </>
-      ) : isSearching ? (
-        <div className="rounded-lg border border-dashed px-6 py-16 text-center">
-          <p className="font-medium">No inquiries match “{query}”</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Search looks at the contact name and email address.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed px-6 py-16 text-center">
-          <p className="font-medium">No inquiries yet</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Add the first one, or run{" "}
-            <code className="bg-muted rounded px-1 py-0.5 font-mono text-xs">bun run db:seed</code>{" "}
-            for samples.
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/inquiries/new">New inquiry</Link>
-          </Button>
-        </div>
-      )}
     </main>
   );
 }

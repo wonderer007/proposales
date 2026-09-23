@@ -37,7 +37,7 @@ export default function ErrorPage({
           Try again
         </Button>
         <Button asChild variant="outline">
-          <Link href="/">Back to inquiries</Link>
+          <Link href="/inquiries">Back to inquiries</Link>
         </Button>
       </div>
 

@@ -51,7 +51,7 @@ export default async function OutreachLeadPage({
   const cadence = CADENCE_BADGE[customer.cadence];
   const outcome = OUTCOME_BADGE[customer.outcome];
 
-  // The radar's range travels with the manager, so going back lands on the
+  // The radar's range travels with the manager, so the breadcrumb lands on the
   // same scan they came from.
   const backSearch = new URLSearchParams(
     Object.entries({ today: first(query.today), from, to }).filter(
@@ -80,7 +80,11 @@ export default async function OutreachLeadPage({
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
       <PageHeader
-        back={{ href: `/outreach${backSearch ? `?${backSearch}` : ""}`, label: "Outreach radar" }}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Outreach", href: `/outreach${backSearch ? `?${backSearch}` : ""}` },
+          { label: customer.contactName },
+        ]}
         title={customer.contactName}
         description={customer.companyName ?? undefined}
         actions={

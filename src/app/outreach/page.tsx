@@ -39,6 +39,7 @@ export default async function OutreachPage({ searchParams }: PageProps<"/outreac
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
       <PageHeader
+        breadcrumbs={[{ label: "Dashboard", href: "/" }, { label: "Outreach" }]}
         title="Outreach radar"
         description="Past customers whose event is due round again, so you can get in touch before they go elsewhere."
       />

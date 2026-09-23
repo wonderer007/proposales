@@ -93,7 +93,11 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
       <PageHeader
-        back={{ href: "/", label: "Inquiries" }}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Inquiry Manager", href: "/inquiries" },
+          { label: inquiry.contactName },
+        ]}
         title={inquiry.contactName}
         description={
           <>

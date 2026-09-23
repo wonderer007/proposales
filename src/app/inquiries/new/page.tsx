@@ -9,7 +9,11 @@ export default function NewInquiryPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
       <PageHeader
-        back={{ href: "/", label: "Inquiries" }}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Inquiry Manager", href: "/inquiries" },
+          { label: "New inquiry" },
+        ]}
         title="New inquiry"
         description="Saved here and mirrored to Proposales as a request for proposal."
       />

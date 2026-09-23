@@ -25,8 +25,8 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Inquiry-to-Proposal Agent",
-    template: "%s — Inquiry-to-Proposal Agent",
+    default: "Proposales Plus",
+    template: "%s — Proposales Plus",
   },
   description:
     "Turn hotel inquiries into Proposales proposals with an AI assistant that shortlists products.",

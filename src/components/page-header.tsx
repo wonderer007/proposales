@@ -1,21 +1,26 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { AppBreadcrumbs, type Crumb } from "@/components/app-breadcrumbs";
 import { cn } from "cn";
 
 /**
  * The one page-title treatment, so every route opens the same way:
- * optional back link, h1, a one-line description, and actions on the right.
+ * a breadcrumb trail or a back link, h1, a one-line description, and actions
+ * on the right.
  */
 export function PageHeader({
   title,
   description,
+  breadcrumbs,
   back,
   actions,
   className,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
+  /** The trail to this page. Takes the place of `back` when both are given. */
+  breadcrumbs?: Crumb[];
   back?: { href: string; label: string };
   actions?: React.ReactNode;
   className?: string;
@@ -23,7 +28,9 @@ export function PageHeader({
   return (
     <header className={cn("mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4", className)}>
       <div className="min-w-0 space-y-1.5">
-        {back ? (
+        {breadcrumbs?.length ? (
+          <AppBreadcrumbs items={breadcrumbs} />
+        ) : back ? (
           <Link
             href={back.href}
             className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ml-0.5 inline-flex items-center gap-1 rounded-sm text-sm outline-none transition-colors focus-visible:ring-3"

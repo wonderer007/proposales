@@ -25,7 +25,7 @@ export function InquiryPagination({
     if (target > 1) params.set("page", String(target));
 
     const search = params.toString();
-    return search ? `/?${search}` : "/";
+    return search ? `/inquiries?${search}` : "/inquiries";
   };
 
   return (

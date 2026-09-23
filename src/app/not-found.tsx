@@ -12,7 +12,7 @@ export default function NotFound() {
       />
 
       <Button asChild>
-        <Link href="/">Back to inquiries</Link>
+        <Link href="/inquiries">Back to inquiries</Link>
       </Button>
     </main>
   );
