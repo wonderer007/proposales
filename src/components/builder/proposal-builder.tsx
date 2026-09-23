@@ -356,8 +356,8 @@ export function ProposalBuilder({
 
         {!readiness.ready ? (
           <ul className="text-muted-foreground space-y-0.5 text-xs">
-            {readiness.reasons.map((reason) => (
-              <li key={reason}>· {reason}</li>
+            {readiness.reasons.map((reason, index) => (
+              <li key={`${reason}-${index}`}>· {reason}</li>
             ))}
           </ul>
         ) : null}

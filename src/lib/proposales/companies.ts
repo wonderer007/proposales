@@ -49,8 +49,16 @@ export async function getSelectedCompany(): Promise<Company> {
     });
   }
 
-  const store = await cookies();
-  const fromCookie = Number(store.get(COMPANY_COOKIE)?.value);
+  // Scripts and the eval runner have no request, and so no cookie. `cookies()`
+  // throws synchronously there, so this needs try/catch rather than .catch().
+  let fromCookie = Number.NaN;
+  try {
+    const store = await cookies();
+    fromCookie = Number(store.get(COMPANY_COOKIE)?.value);
+  } catch {
+    // No request scope — fall through to the env default or the first company.
+  }
+
   const chosen = companies.find((company) => company.id === fromCookie);
   if (chosen) return chosen;
 

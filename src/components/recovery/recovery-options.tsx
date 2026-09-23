@@ -58,8 +58,8 @@ export function RecoveryOptions({
             </div>
 
             <ul className="text-muted-foreground space-y-0.5 text-xs">
-              {option.detail.map((line) => (
-                <li key={line}>· {line}</li>
+              {option.detail.map((line, index) => (
+                <li key={`${line}-${index}`}>· {line}</li>
               ))}
             </ul>
 

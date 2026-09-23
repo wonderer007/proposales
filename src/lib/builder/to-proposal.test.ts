@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { addItem, emptyDraft, setRequirements, upsertEvent, type CatalogProduct } from "./draft";
+import {
+  addItem,
+  emptyDraft,
+  setItemOptions,
+  setRequirements,
+  upsertEvent,
+  type CatalogProduct,
+} from "./draft";
 import { buildBlock, buildDescription, buildTitle, toProposalRequest, type ProposalInquiry } from "./to-proposal";
 
 const inquiry: ProposalInquiry = {
@@ -41,20 +48,34 @@ function fullDraft() {
 }
 
 describe("buildTitle", () => {
-  test("names the events and the company", () => {
-    expect(buildTitle(fullDraft(), inquiry)).toBe("Company meeting with lunch – Northstar Consulting");
-  });
-
-  test("falls back to the contact when there is no company", () => {
-    expect(buildTitle(fullDraft(), { ...inquiry, companyName: null })).toBe(
-      "Company meeting with lunch – Anna Lindqvist",
+  test("says what the proposal is for, not what is in it", () => {
+    expect(buildTitle(fullDraft(), inquiry)).toBe(
+      "Company meeting for 25 guests, 14 October 2026 – Northstar Consulting",
     );
   });
 
-  test("handles a single event", () => {
-    const draft = addItem(upsertEvent(emptyDraft(), meeting), { id: "i1", eventId: "e1", product: room });
+  test("falls back to the contact when there is no company", () => {
+    expect(buildTitle(fullDraft(), { ...inquiry, companyName: null })).toContain("– Anna Lindqvist");
+  });
 
-    expect(buildTitle(draft, inquiry)).toBe("Company meeting – Northstar Consulting");
+  test("spans a date range when the events run over several days", () => {
+    let draft = upsertEvent(emptyDraft(), { ...meeting, date: "2026-11-18" });
+    draft = upsertEvent(draft, { ...lunchEvent, date: "2026-11-20", headcount: 40 });
+
+    expect(buildTitle(draft, inquiry)).toBe(
+      "Lunch for 40 guests, 18–20 November 2026 – Northstar Consulting",
+    );
+  });
+
+  test("takes the occasion from the largest event", () => {
+    let draft = upsertEvent(emptyDraft(), { ...meeting, headcount: 20 });
+    draft = upsertEvent(draft, { ...lunchEvent, label: "Gala dinner", headcount: 120 });
+
+    expect(buildTitle(draft, inquiry)).toContain("Gala dinner for 120 guests");
+  });
+
+  test("degrades to something sensible with no events", () => {
+    expect(buildTitle(emptyDraft(), inquiry)).toBe("Proposal – Northstar Consulting");
   });
 });
 
@@ -146,7 +167,9 @@ describe("toProposalRequest", () => {
     });
     expect(request.blocks).toHaveLength(2);
     expect(request.blocks?.[0]?.content_id).toBe(101);
-    expect(request.title_md).toBe("Company meeting with lunch – Northstar Consulting");
+    expect(request.title_md).toBe(
+      "Company meeting for 25 guests, 14 October 2026 – Northstar Consulting",
+    );
   });
 
   test("links the proposal back to the RFP", () => {
@@ -239,5 +262,159 @@ describe("buildBlock with optional and flexible settings", () => {
     const fixed = buildBlock({ ...item, discount: { type: "fixed", value: 5_000 } });
     expect(fixed.fixed_discount).toBe(5_000);
     expect(fixed.percent_discount).toBeUndefined();
+  });
+});
+
+describe("description explains the arrangements", () => {
+  const skansen: CatalogProduct = {
+    productId: 9, variationId: 109, title: "Skansen Room", unit: "day",
+    contentType: "meetingRoom", unitPriceMinor: 80_000, vatRate: 0.25, currency: "EUR",
+  };
+  const bedroom: CatalogProduct = {
+    productId: 10, variationId: 110, title: "Standard double room", unit: "night",
+    contentType: "accommodation", unitPriceMinor: 18_500, vatRate: 0.12, currency: "EUR",
+  };
+  const spa: CatalogProduct = {
+    productId: 11, variationId: 111, title: "Spa access", unit: "person",
+    contentType: "other", unitPriceMinor: 4_000, vatRate: 0.25, currency: "EUR",
+  };
+
+  function bigMeeting() {
+    // 120 guests seated across two rooms — the case that looks like a mistake
+    // on a bare block list.
+    let draft = upsertEvent(emptyDraft(), { ...meeting, headcount: 120 });
+    draft = addItem(draft, { id: "r1", eventId: "e1", product: room });
+
+    return addItem(draft, { id: "r2", eventId: "e1", product: skansen });
+  }
+
+  test("says why two rooms are booked for one event", () => {
+    const description = buildDescription(bigMeeting(), inquiry);
+
+    expect(description).toContain("How we have arranged it");
+    expect(description).toContain(
+      "2 rooms are reserved so all 120 guests are seated together: Vasa Room, Skansen Room.",
+    );
+  });
+
+  test("stays quiet when one room seats everyone", () => {
+    const draft = addItem(upsertEvent(emptyDraft(), meeting), {
+      id: "r1", eventId: "e1", product: room,
+    });
+
+    expect(buildDescription(draft, inquiry)).not.toContain("How we have arranged it");
+  });
+
+  test("mentions overnight accommodation", () => {
+    const draft = addItem(bigMeeting(), { id: "b1", eventId: "e1", product: bedroom });
+
+    expect(buildDescription(draft, inquiry)).toContain(
+      "Overnight accommodation is included: Standard double room.",
+    );
+  });
+
+  test("names value-added services as optional extras", () => {
+    let draft = addItem(bigMeeting(), { id: "s1", eventId: "e1", product: spa, role: "addon" });
+    draft = setItemOptions(draft, "s1", { comment: "Bookable per guest" });
+
+    const description = buildDescription(draft, inquiry);
+
+    expect(description).toContain("Optional extras");
+    expect(description).toContain("Yours to include or leave out");
+    expect(description).toContain("- Spa access — Bookable per guest");
+  });
+
+  test("omits the extras section when everything is core", () => {
+    expect(buildDescription(bigMeeting(), inquiry)).not.toContain("Optional extras");
+  });
+
+  test("writes the arrangements in Swedish too", () => {
+    const description = buildDescription({ ...bigMeeting(), language: "sv" }, inquiry);
+
+    expect(description).toContain("Så har vi lagt upp det");
+    expect(description).toContain("alla 120 gäster");
+  });
+});
+
+describe("a multi-day event does not repeat itself", () => {
+  const skansenRoom: CatalogProduct = {
+    productId: 9, variationId: 109, title: "Skansen Room", unit: "day",
+    contentType: "meetingRoom", unitPriceMinor: 80_000, vatRate: 0.25, currency: "EUR",
+  };
+  const pa: CatalogProduct = {
+    productId: 12, variationId: 112, title: "PA system", unit: "unit",
+    contentType: "other", unitPriceMinor: 9_500, vatRate: 0.25, currency: "EUR",
+  };
+
+  /** Two days of the same conference: same rooms, same extra, on each day. */
+  function twoDays() {
+    let draft = emptyDraft();
+
+    for (const [id, date] of [
+      ["d1", "2026-11-18"],
+      ["d2", "2026-11-19"],
+    ] as const) {
+      draft = upsertEvent(draft, {
+        id, type: "conference", label: "Annual conference", date,
+        startTime: "09:00", endTime: "17:00", headcount: 100, inferred: [],
+      });
+      draft = addItem(draft, { id: `${id}-a`, eventId: id, product: room });
+      draft = addItem(draft, { id: `${id}-b`, eventId: id, product: skansenRoom });
+      draft = addItem(draft, { id: `${id}-pa`, eventId: id, product: pa, role: "addon" });
+    }
+
+    return draft;
+  }
+
+  function occurrences(text: string, needle: string): number {
+    return text.split(needle).length - 1;
+  }
+
+  test("states a shared room arrangement once, as 'each day'", () => {
+    const description = buildDescription(twoDays(), inquiry);
+
+    expect(occurrences(description, "rooms are reserved")).toBe(1);
+    expect(description).toContain(
+      "Each day, 2 rooms are reserved so all 100 guests are seated together: Vasa Room, Skansen Room.",
+    );
+  });
+
+  test("lists an extra booked on every day only once", () => {
+    expect(occurrences(buildDescription(twoDays(), inquiry), "- PA system")).toBe(1);
+  });
+
+  test("still distinguishes days whose arrangements differ", () => {
+    const board: CatalogProduct = {
+      ...skansenRoom, productId: 13, variationId: 113, title: "Board Room", unitPriceMinor: 45_000,
+    };
+
+    let draft = twoDays();
+    // Day two moves to different rooms for a smaller group.
+    draft = { ...draft, items: draft.items.filter((item) => !item.id.startsWith("d2-")) };
+    draft = upsertEvent(draft, {
+      id: "d2", type: "meeting", label: "Workshop day", date: "2026-11-19",
+      startTime: "09:00", endTime: "13:00", headcount: 40, inferred: [],
+    });
+    draft = addItem(draft, { id: "d2-a", eventId: "d2", product: room });
+    draft = addItem(draft, { id: "d2-b", eventId: "d2", product: board });
+
+    const description = buildDescription(draft, inquiry);
+
+    expect(occurrences(description, "rooms are reserved")).toBe(2);
+    expect(description).toContain("Workshop day, Thursday, 19 November 2026: 2 rooms");
+    expect(description).toContain("all 40 guests");
+  });
+
+  test("keeps a single-day proposal phrased plainly", () => {
+    let draft = upsertEvent(emptyDraft(), { ...meeting, headcount: 100 });
+    draft = addItem(draft, { id: "a", eventId: "e1", product: room });
+    draft = addItem(draft, { id: "b", eventId: "e1", product: skansenRoom });
+
+    const description = buildDescription(draft, inquiry);
+
+    expect(description).toContain("2 rooms are reserved");
+    expect(description).not.toContain("Each day");
+    // One arrangement needs no date prefix.
+    expect(description).not.toContain("Company meeting, Wednesday, 14 October 2026: 2 rooms");
   });
 });

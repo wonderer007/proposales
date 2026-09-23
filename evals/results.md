@@ -2,46 +2,41 @@
 
 Run on 2026-09-23 against the live content library.
 
-**8/8 checks passed** across 2 fixtures. Invented product ids: none.
+**7/7 checks passed** across 1 fixtures. Invented product ids: none.
 
 | Fixture | Checks | Events | Items | Steps |
 | --- | --- | --- | --- | --- |
-| Rejection on price — three options, none over policy | 5/5 | 2 | 2 | 6 |
-| Bare rejection — one question, no options | 3/3 | 0 | 0 | 1 |
+| Structured request: meeting + lunch, 50 guests | 7/7 | 2 | 2 | 5 |
 
 ## Detail
 
-### Rejection on price — three options, none over policy
+### Structured request: meeting + lunch, 50 guests
 
 - ✅ no invented product ids
-- ✅ events >= 1 — `got 2`
+- ✅ events = 2 — `got 2`
+- ✅ types = lunch+meeting — `lunch+meeting`
+- ✅ headcounts = 50,50 — `50,50`
+- ✅ dates = 2026-11-05,2026-11-05 — `2026-11-05,2026-11-05`
+- ✅ does not need to ask
 - ✅ shortlists products or offers a choice — `2 items`
-- ✅ applies no discount itself — `0 applied`
-- ✅ never mentions a discount above the policy cap
 
 <details><summary>Reply</summary>
 
 ```
-Draft set up:
+Here's the draft I've put together, both events on **Thursday, 5 November 2026** — please confirm the date with the checkbox on the card for each.
 
-- **Company meeting** — Thu, 5 Nov 2026, 09:00–16:00, 50 guests, Vasa Room (850 EUR/day)
-- **Lunch** — same day, 12:00–13:00 (time inferred from the meeting slot), 50 guests, Lunch buffet (32 EUR/person)
+**Meeting** (09:00–12:00, 50 guests)
+- Skansen Room — 800 EUR/day. Fits 50 theatre-style, includes projector and screen, so it covers the "screen for presentations" requirement directly. This is the only room in the library that seats 50, so I didn't offer alternatives.
 
-⚠️ Flagged: Vasa Room's stated capacity is 25 boardroom / 40 theatre style — below 50 guests. Skansen Room seats 50 theatre style and might fit better; let me know if you'd like me to swap it.
+**Lunch** (12:00–13:00, 50 guests)
+- Lunch buffet — 32 EUR/person = 1,600 EUR. Vegetarian and vegan options are always included, matching the request.
 
-Please confirm both dates on the card, and review the flag before sending.
-```
-</details>
+Alternative worth considering: the **Full-day conference package** (65 EUR/person) bundles morning coffee, lunch, and afternoon fika — more than what was asked for, but could be worth mentioning if you want to upsell. I left it out since it wasn't requested and adds cost beyond scope.
 
-### Bare rejection — one question, no options
+Total so far: 2,400 EUR excl. VAT.
 
-- ✅ no invented product ids
-- ✅ asks for missing info
-- ✅ changes nothing before it has an answer
+Both requirements (screen, vegetarian lunch) are recorded as matched. No budget was mentioned, so nothing to record there.
 
-<details><summary>Reply</summary>
-
-```
-Did the customer say why? For example price, dates or availability, scope, timing, or they went elsewhere.
+Let me know if you'd like the Full-day package swapped in instead, or if you want to add anything else (e.g. coffee break, AV extras). Otherwise, the draft looks ready for you to review and confirm on the Proposal Builder card.
 ```
 </details>

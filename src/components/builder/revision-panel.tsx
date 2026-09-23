@@ -43,8 +43,8 @@ export function RevisionPanel({
             <UserCheck className="size-3" aria-hidden /> What the customer did
           </p>
           <ul className="space-y-0.5 text-xs">
-            {selections.map((line) => (
-              <li key={line}>· {line}</li>
+            {selections.map((line, index) => (
+              <li key={`${line}-${index}`}>· {line}</li>
             ))}
           </ul>
         </div>
@@ -75,8 +75,8 @@ export function RevisionPanel({
             <ArrowRight className="size-3" aria-hidden /> Your changes
           </p>
           <ul className="space-y-0.5 text-xs">
-            {changes.map((line) => (
-              <li key={line}>· {line}</li>
+            {changes.map((line, index) => (
+              <li key={`${line}-${index}`}>· {line}</li>
             ))}
           </ul>
           {totalDeltaMinor !== 0 ? (

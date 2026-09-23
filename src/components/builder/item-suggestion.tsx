@@ -71,8 +71,8 @@ export function ItemSuggestionCard({
       </p>
 
       <ul className="text-muted-foreground space-y-0.5 pl-5 text-xs">
-        {describe(suggestion).map((line) => (
-          <li key={line}>· {line}</li>
+        {describe(suggestion).map((line, index) => (
+          <li key={`${line}-${index}`}>· {line}</li>
         ))}
       </ul>
 
