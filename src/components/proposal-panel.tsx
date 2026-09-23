@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { WorkingDraft } from "@/lib/builder/draft";
 import type { Readiness } from "@/lib/builder/readiness";
+import type { RevisionSummary } from "@/components/builder/proposal-builder";
 import type { Proposal } from "@/lib/db/schema";
 
 /**
@@ -16,12 +17,14 @@ export function ProposalPanel({
   draft,
   readiness,
   activeProposalStatus,
+  revision,
   proposals,
 }: {
   inquiryId: string;
   draft: WorkingDraft;
   readiness: Readiness;
   activeProposalStatus: string | null;
+  revision: RevisionSummary | null;
   proposals: Proposal[];
 }) {
   return (
@@ -47,6 +50,7 @@ export function ProposalPanel({
               draft={draft}
               readiness={readiness}
               activeProposalStatus={activeProposalStatus}
+              revision={revision}
             />
           </TabsContent>
           <TabsContent value="history">

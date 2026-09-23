@@ -6,6 +6,7 @@ import { buildSystemPrompt } from "@/lib/agent/prompt";
 import { createAgentTools } from "@/lib/agent/tools";
 import { parseDraft } from "@/lib/builder/draft";
 import { getActiveProposal, getInquiryWithEvents, saveMessages } from "@/lib/db/queries";
+import { describeSelections, type RecipientSelections } from "@/lib/proposals/selections";
 
 export const maxDuration = 60;
 
@@ -46,7 +47,14 @@ export async function POST(request: Request) {
       draft,
       today: new Date().toISOString().slice(0, 10),
       activeProposal: active
-        ? { version: active.version, status: active.status, snapshot: active.snapshot }
+        ? {
+            version: active.version,
+            status: active.status,
+            snapshot: active.snapshot,
+            recipientSelections: describeSelections(
+              (active.recipientSelections as RecipientSelections | null) ?? null,
+            ),
+          }
         : null,
     }),
     // Scoped to this inquiry by closure; the model never supplies the id.

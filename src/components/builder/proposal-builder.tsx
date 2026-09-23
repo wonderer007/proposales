@@ -6,6 +6,7 @@ import { ItemSuggestionCard } from "@/components/builder/item-suggestion";
 import { DismissFlagButton } from "@/components/builder/dismiss-flag-button";
 import { QuantityInput } from "@/components/builder/quantity-input";
 import { RemoveItemButton } from "@/components/builder/remove-item-button";
+import { RevisionPanel } from "@/components/builder/revision-panel";
 import { SubmitProposalButton } from "@/components/builder/submit-proposal-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { proposalAction, proposalActionLabel } from "@/lib/builder/action-label";
 import type { DraftEvent, DraftItem, WorkingDraft } from "@/lib/builder/draft";
+import type { PriceChange } from "@/lib/builder/price-check";
 import type { Readiness } from "@/lib/builder/readiness";
 import { calculateTotals, formatMoney } from "@/lib/builder/totals";
 import { formatDate, formatTime } from "@/lib/format";
@@ -119,16 +121,27 @@ function EventHeading({
   );
 }
 
+/** What has changed since the version the customer received (D14). */
+export type RevisionSummary = {
+  version: number;
+  changes: string[];
+  selections: string[];
+  priceChanges: PriceChange[];
+  totalDeltaMinor: number;
+};
+
 export function ProposalBuilder({
   inquiryId,
   draft,
   readiness,
   activeProposalStatus,
+  revision,
 }: {
   inquiryId: string;
   draft: WorkingDraft;
   readiness: Readiness;
   activeProposalStatus: string | null;
+  revision?: RevisionSummary | null;
 }) {
   const totals = calculateTotals(draft);
   const action = proposalAction(activeProposalStatus);
@@ -303,6 +316,19 @@ export function ProposalBuilder({
           </div>
         ) : null}
       </section>
+
+      {revision ? (
+        <RevisionPanel
+          inquiryId={inquiryId}
+          version={revision.version}
+          changes={revision.changes}
+          selections={revision.selections}
+          priceChanges={revision.priceChanges}
+          totalDeltaMinor={revision.totalDeltaMinor}
+          currency={totals.currency}
+          versionNote={draft.revisionNote}
+        />
+      ) : null}
 
       <section className="space-y-2">
         <SubmitProposalButton inquiryId={inquiryId} label={label} disabled={!readiness.ready} />

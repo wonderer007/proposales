@@ -240,6 +240,17 @@ export const proposalStatusSchema = z.enum([
 ]);
 export type ProposalStatus = z.infer<typeof proposalStatusSchema>;
 
+/** What the recipient did with one block, read back from Get Proposal. */
+export const proposalBlockStateSchema = z.object({
+  content_id: z.number().int().nullish(),
+  uuid: z.string().nullish(),
+  quantity: z.number().nullish(),
+  optional: z.boolean().nullish(),
+  /** Absent until the recipient actually picks or unpicks an optional block. */
+  optional_picked: z.boolean().nullish(),
+});
+export type ProposalBlockState = z.infer<typeof proposalBlockStateSchema>;
+
 export const proposalSchema = z.object({
   uuid: z.string(),
   status: proposalStatusSchema.nullable(),
@@ -253,6 +264,7 @@ export const proposalSchema = z.object({
   value_without_tax: z.number().optional(),
   status_changed_at: z.number().int().optional(),
   updated_at: z.number().int().optional(),
+  blocks: z.array(proposalBlockStateSchema).optional(),
 });
 export type Proposal = z.infer<typeof proposalSchema>;
 

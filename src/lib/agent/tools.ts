@@ -15,6 +15,7 @@ import {
   removeItem,
   setBudget,
   setItemOptions,
+  setRevisionNote,
   setRequirements,
   suggestItemOptions,
   upsertEvent,
@@ -303,7 +304,9 @@ export function createAgentTools(
       description:
         "Change how an item is presented: whether the customer may deselect it (optional), " +
         "whether they may change the quantity (flexible, with bounds), its role, or a note " +
-        "shown beside it. Set `origin` honestly — it decides whether the change takes effect.",
+        "shown beside it. This does NOT change the quantity itself — quantity follows the " +
+        "event's headcount and times, so change those with upsertEvent instead. " +
+        "Set `origin` honestly — it decides whether the change takes effect.",
       inputSchema: z.object({
         itemId: z.string(),
         origin: z
@@ -404,6 +407,19 @@ export function createAgentTools(
       description: "Remove a warning that no longer applies.",
       inputSchema: z.object({ id: z.string() }),
       execute: async ({ id }) => mutate((draft) => saveDraft(clearFlag(draft, id))),
+    }),
+
+    draftChangeNote: tool({
+      description:
+        "Draft the short \"What's changed\" note that travels with the next version and is " +
+        "shown to the customer. Use it once you have made the edits for a revision. The " +
+        "manager can edit it on the card before sending.",
+      inputSchema: z.object({
+        note: z
+          .string()
+          .describe("One or two plain sentences, e.g. 'Lunch increased to 60 guests and a dinner added.'"),
+      }),
+      execute: async ({ note }) => mutate((draft) => saveDraft(setRevisionNote(draft, note))),
     }),
 
     setBudget: tool({

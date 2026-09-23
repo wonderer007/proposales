@@ -7,7 +7,13 @@ import { ProposalPanel } from "@/components/proposal-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseDraft } from "@/lib/builder/draft";
+import { diffDrafts } from "@/lib/builder/diff";
+import { findPriceChanges } from "@/lib/builder/price-check";
 import { checkReadiness } from "@/lib/builder/readiness";
+import { calculateTotals } from "@/lib/builder/totals";
+import { hydrateDraft } from "@/lib/proposals/hydrate-draft";
+import { describeSelections } from "@/lib/proposals/selections";
+import type { RecipientSelections } from "@/lib/proposals/selections";
 import { getContentLibrary } from "@/lib/content/library";
 import {
   getActiveProposal,
@@ -40,7 +46,8 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
     getMessages(id),
   ]);
 
-  const draft = parseDraft(inquiry.workingDraft, inquiry.language);
+  // Continue from what the customer actually received, not from a stale draft.
+  const draft = await hydrateDraft(inquiry, activeProposal);
 
   // A library outage must not blank the card, so fall back to accepting the
   // variation ids already on the draft rather than calling every line unknown.
@@ -52,6 +59,23 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
     knownVariationIds,
     today: new Date().toISOString().slice(0, 10),
   });
+
+  // What has moved since the version the customer holds.
+  const snapshot = activeProposal ? parseDraft(activeProposal.snapshot, inquiry.language) : null;
+  const revision = snapshot
+    ? {
+        version: activeProposal!.version,
+        changes: diffDrafts(snapshot, draft),
+        selections: describeSelections(
+          (activeProposal!.recipientSelections as RecipientSelections | null) ?? null,
+        ),
+        priceChanges: await getContentLibrary()
+          .then((products) => findPriceChanges(draft, products))
+          .catch(() => []),
+        totalDeltaMinor:
+          calculateTotals(draft).inclVatMinor - calculateTotals(snapshot).inclVatMinor,
+      }
+    : null;
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
@@ -84,6 +108,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
             draft={draft}
             readiness={readiness}
             activeProposalStatus={activeProposal?.status ?? null}
+            revision={revision}
             proposals={proposals}
           />
         </div>

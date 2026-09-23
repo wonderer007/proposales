@@ -19,6 +19,16 @@ import type { ContentType, Unit } from "@/lib/proposales/schemas";
 /** Languages a proposal can be written in. */
 export type Language = "en" | "sv";
 
+/** Why a customer turned a proposal down (SPEC §5). */
+export type RejectionCategory =
+  | "price"
+  | "availability"
+  | "scope"
+  | "timing"
+  | "competitor"
+  | "no_reason"
+  | "other";
+
 /** Roles persisted for chat messages (AI SDK `UIMessage.role`). */
 export type MessageRole = "system" | "user" | "assistant";
 
@@ -87,6 +97,16 @@ export const proposals = pgTable(
     status: text("status").notNull(),
     /** The `WorkingDraft` this version was created from. */
     snapshot: jsonb("snapshot").notNull(),
+    /**
+     * What the recipient did with this version in Proposales: per-block
+     * `optional_picked` and any quantity they set themselves (SPEC §5).
+     */
+    recipientSelections: jsonb("recipient_selections"),
+    /** "What's changed" summary shown with this version. */
+    versionNote: text("version_note"),
+    /** Filled when a proposal comes back rejected (D15). */
+    rejectionReason: text("rejection_reason"),
+    rejectionCategory: text("rejection_category").$type<RejectionCategory>(),
     supersededAt: timestamp("superseded_at", { withTimezone: true }),
     statusCheckedAt: timestamp("status_checked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

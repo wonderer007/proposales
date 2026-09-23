@@ -57,8 +57,16 @@ export function diffDrafts(before: WorkingDraft, after: WorkingDraft): string[] 
   const beforeItems = new Map(before.items.map((item) => [item.id, item]));
   const afterItems = new Map(after.items.map((item) => [item.id, item]));
 
+  // An item removed and re-added keeps its product but changes id. Matching on
+  // (event, product) as a fallback keeps that reading as one quantity change
+  // rather than an unhelpful "Added X / Removed X" pair.
+  const key = (item: { eventId: string; variationId: number }) =>
+    `${item.eventId}:${item.variationId}`;
+  const beforeByProduct = new Map(before.items.map((item) => [key(item), item]));
+  const afterByProduct = new Map(after.items.map((item) => [key(item), item]));
+
   for (const item of after.items) {
-    const previous = beforeItems.get(item.id);
+    const previous = beforeItems.get(item.id) ?? beforeByProduct.get(key(item));
 
     if (!previous) {
       changes.push(`Added: ${item.title} × ${item.quantity}`);
@@ -77,7 +85,9 @@ export function diffDrafts(before: WorkingDraft, after: WorkingDraft): string[] 
   }
 
   for (const item of before.items) {
-    if (!afterItems.has(item.id)) changes.push(`Removed: ${item.title}`);
+    if (!afterItems.has(item.id) && !afterByProduct.has(key(item))) {
+      changes.push(`Removed: ${item.title}`);
+    }
   }
 
   const beforeRequirements = new Set(before.requirements.map((r) => `${r.text}:${r.status}`));

@@ -25,6 +25,7 @@ describe("the agent's tool set", () => {
         "removeEvent",
         "removeItem",
         "setBudget",
+        "draftChangeNote",
         "setItemOptions",
         "setRequirements",
         "upsertEvent",
@@ -33,6 +34,8 @@ describe("the agent's tool set", () => {
   });
 
   test("has NO tool that creates, patches or versions a proposal", () => {
+    // Deliberately a blunt name check: anything that even reads as a proposal
+    // action should fail here and be renamed, not excused.
     // The manager's button is the only path to Proposales (SPEC §7.2, §6.4).
     const forbidden = /proposal|create|patch|version|send|submit|publish/i;
     const offenders = names.filter((name) => forbidden.test(name));
@@ -74,6 +77,13 @@ describe("the agent's tool set", () => {
       "role",
       "variationId",
     ]);
+  });
+
+  test("draftChangeNote only writes text", () => {
+    const schema = (tools.draftChangeNote as { inputSchema?: { shape?: Record<string, unknown> } })
+      .inputSchema;
+
+    expect(Object.keys(schema?.shape ?? {})).toEqual(["note"]);
   });
 
   test("setItemOptions demands an origin, so applying is never implicit", () => {

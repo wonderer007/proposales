@@ -14,6 +14,7 @@ import {
   removeItem,
   setItemOptions,
   setQuantity,
+  setRevisionNote,
   type ItemOptions,
   type WorkingDraft,
 } from "./draft";
@@ -83,6 +84,14 @@ export async function removeDraftItem(
 
 export async function dismissFlag(inquiryId: string, flagId: string): Promise<BuilderResult> {
   return updateDraft(inquiryId, (draft) => clearFlag(draft, flagId));
+}
+
+/** The "What's changed" note that travels with the next version. */
+export async function updateVersionNote(
+  inquiryId: string,
+  note: string | null,
+): Promise<BuilderResult> {
+  return updateDraft(inquiryId, (draft) => setRevisionNote(draft, note));
 }
 
 /** The manager changing an item's presentation settings on the card. */

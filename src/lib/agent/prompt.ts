@@ -14,7 +14,13 @@ export type PromptContext = {
   /** `YYYY-MM-DD`, injected rather than read from the clock so it is testable. */
   today: string;
   /** The active proposal, if one exists, so the reply can say what changed. */
-  activeProposal?: { version: number; status: string; snapshot: unknown } | null;
+  activeProposal?: {
+    version: number;
+    status: string;
+    snapshot: unknown;
+    /** What the recipient did with that version, already in plain sentences. */
+    recipientSelections?: string[];
+  } | null;
 };
 
 function describeFormDates(inquiry: InquiryWithEvents): string {
@@ -66,9 +72,18 @@ function describeActiveProposal(
 
   const header = `Active proposal: version ${activeProposal.version}, status "${activeProposal.status}".`;
 
-  return changes.length === 0
-    ? `${header} The working draft matches it exactly — there is nothing new to send.`
-    : `${header} The working draft differs from it:\n${changes.map((line) => `- ${line}`).join("\n")}`;
+  const selections = activeProposal.recipientSelections ?? [];
+  const selectionLines =
+    selections.length > 0
+      ? `\n\nWhat the customer did with it:\n${selections.map((line) => `- ${line}`).join("\n")}`
+      : "";
+
+  const diff =
+    changes.length === 0
+      ? `${header} The working draft matches it exactly — there is nothing new to send.`
+      : `${header} The working draft differs from it:\n${changes.map((line) => `- ${line}`).join("\n")}`;
+
+  return `${diff}${selectionLines}`;
 }
 
 export function buildSystemPrompt({
@@ -119,6 +134,13 @@ You are talking to the hotel manager, not the customer. Be brief and concrete �
 14. **When you add a value-added service** — spa access, a tour, late checkout, extra AV, an upgrade — add it with \`role: "addon"\`. It then becomes optional and adjustable from zero automatically, so the customer can decline it. Say that you did and why.
 18. **Honour direct instructions immediately, and only those.** Use \`origin: "manager_request"\` **only when the manager's own words asked for that exact change** — "make the spa optional", "let them pick between 40 and 60 lunches". Then apply it and confirm in one line; these are presentation settings, not prices, so a second click would be pointless friction. If they ask for flexibility without bounds ("make the lunch flexible"), ask for the minimum and maximum first; never guess a range.
     Everything else is \`origin: "agent_suggestion"\`. Choosing a product for them, or judging that a quantity *ought* to be flexible, is your idea however sensible it is — it waits on the card. Asking you to add a product is not permission to change how it is presented.
+
+15. **On a revision, summarise the diff first.** Before suggesting the manager create a new version, state plainly what differs from the version the customer already has, and call \`draftChangeNote\` with a short "What's changed" note they can edit on the card.
+16. **Always ask before acting on news about a sent proposal.** If the manager says the customer "has updates", "wants changes", or that a proposal was rejected, and gives no specifics, ask **one** focused question and change nothing until they answer:
+    - changes → "What would they like changed? For example headcount, dates, or products added or removed."
+    - rejection → "Did the customer say why? For example price, dates or availability, scope, timing, or they went elsewhere." "They didn't say" is a complete answer — accept it and move on.
+    Ask once. Never interrogate, and never infer a reason from the numbers ("it was probably price").
+17. Once you know what changed, restate it in one line so the manager can correct you, then make the edits and summarise the diff.
 
 ## What you cannot do
 - You have **no tool that creates, updates or versions a proposal**. Only the manager can, with the button on the Proposal Builder card. Never claim a proposal was created or sent.

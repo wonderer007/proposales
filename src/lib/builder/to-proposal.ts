@@ -28,6 +28,7 @@ const COPY = {
     schedule: "Schedule",
     guests: (n: number) => `${n} guests`,
     notes: "Still to confirm",
+    whatsChanged: "What's changed",
     closing: "We look forward to welcoming you.",
   },
   sv: {
@@ -36,6 +37,7 @@ const COPY = {
     schedule: "Program",
     guests: (n: number) => `${n} gäster`,
     notes: "Kvar att bekräfta",
+    whatsChanged: "Det här har ändrats",
     closing: "Vi ser fram emot att välkomna er.",
   },
 } as const;
@@ -74,7 +76,15 @@ export function buildDescription(draft: WorkingDraft, inquiry: ProposalInquiry):
   const copy = COPY[draft.language];
   const { first_name } = splitName(inquiry.contactName);
 
-  const lines = [copy.greeting(first_name), "", copy.intro, "", `**${copy.schedule}**`];
+  const lines = [copy.greeting(first_name), "", copy.intro, ""];
+
+  // A revision leads with what moved, so the customer sees it before the
+  // schedule they have already read once (D14).
+  if (draft.revisionNote) {
+    lines.push(`**${copy.whatsChanged}**`, draft.revisionNote, "");
+  }
+
+  lines.push(`**${copy.schedule}**`);
 
   for (const event of draft.events) lines.push(describeEvent(event, draft.language));
 

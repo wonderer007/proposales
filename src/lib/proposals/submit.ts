@@ -141,6 +141,7 @@ export async function submitProposalToProposales(inquiryId: string): Promise<Sub
           status: "draft",
           snapshot: draft,
           statusCheckedAt: new Date(),
+          versionNote: draft.revisionNote,
         }),
       ]);
 

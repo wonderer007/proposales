@@ -100,3 +100,27 @@ describe("diffDrafts", () => {
     expect(draftsAreEquivalent(base(), after)).toBe(true);
   });
 });
+
+describe("an item removed and re-added", () => {
+  test("reads as one quantity change, not an add and a remove", () => {
+    const before = base();
+    // Same product on the same event, new id — what the agent does when it
+    // re-adds a line so the quantity recomputes.
+    const after = addItem(removeItem(before, "i1"), {
+      id: "i2",
+      eventId: "e1",
+      product: { ...lunch },
+    });
+    const withMore = upsertEvent(after, { ...event, headcount: 60 });
+
+    const changes = diffDrafts(before, withMore);
+
+    expect(changes).not.toContain("Removed: Lunch buffet");
+    expect(changes.some((line) => line.startsWith("Added: Lunch buffet"))).toBe(false);
+    expect(changes).toContain("Lunch buffet: 45 → 60");
+  });
+
+  test("still reports a genuinely removed product", () => {
+    expect(diffDrafts(base(), removeItem(base(), "i1"))).toContain("Removed: Lunch buffet");
+  });
+});
