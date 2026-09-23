@@ -7,6 +7,7 @@
  *
  *   bun run scripts/seed-content.ts --dry-run
  *   bun run scripts/seed-content.ts
+ *   bun run scripts/seed-content.ts --company 5473
  *
  * Idempotent. A product whose title already exists in the library is never
  * created again; its ids are reused to (re)build the catalog row, which is
@@ -251,18 +252,31 @@ function formatMoney(minor: number, currency: string): string {
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+  // Scripts have no cookie to read, so the company comes from --company, then
+  // PROPOSALES_COMPANY_ID, then the only company the key can reach.
+  const flagIndex = process.argv.indexOf("--company");
+  const flagValue = flagIndex === -1 ? undefined : process.argv[flagIndex + 1];
   const { PROPOSALES_COMPANY_ID } = loadEnv();
-  const companyId = Number(PROPOSALES_COMPANY_ID);
+  const wanted = Number(flagValue ?? PROPOSALES_COMPANY_ID);
 
-  if (!Number.isInteger(companyId) || companyId < 1) {
-    throw new Error(`PROPOSALES_COMPANY_ID must be a positive integer, got "${PROPOSALES_COMPANY_ID}"`);
+  const companies = await listCompanies();
+
+  if (companies.length === 0) {
+    throw new Error("This API key cannot reach any company. Run scripts/whoami.ts.");
   }
 
-  const company = (await listCompanies()).find((candidate) => candidate.id === companyId);
+  const company = Number.isInteger(wanted)
+    ? companies.find((candidate) => candidate.id === wanted)
+    : companies[0];
 
   if (!company) {
-    throw new Error(`This API key has no access to company ${companyId}. Run scripts/whoami.ts.`);
+    throw new Error(
+      `This API key has no access to company ${wanted}. ` +
+        `Available: ${companies.map((c) => `${c.id} (${c.name})`).join(", ")}.`,
+    );
   }
+
+  const companyId = company.id;
 
   const currency = company.currency;
   console.log(

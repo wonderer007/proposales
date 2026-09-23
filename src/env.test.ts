@@ -5,7 +5,6 @@ import { parseEnv } from "@/env.schema";
 const valid = {
   DATABASE_URL: "postgres://user:pass@host/db",
   PROPOSALES_API_KEY: "test-key",
-  PROPOSALES_COMPANY_ID: "123",
   AI_GATEWAY_API_KEY: "gateway-key",
 };
 
@@ -38,9 +37,15 @@ describe("parseEnv", () => {
       const message = (error as Error).message;
       expect(message).toContain("DATABASE_URL");
       expect(message).toContain("PROPOSALES_API_KEY");
-      expect(message).toContain("PROPOSALES_COMPANY_ID");
       expect(message).toContain("AI_GATEWAY_API_KEY");
     }
+  });
+
+  test("treats the company id as optional", () => {
+    // Companies come from the API and are switched in the app; this only
+    // picks a default, so a missing value must not fail the boot.
+    expect(parseEnv(valid).PROPOSALES_COMPANY_ID).toBeUndefined();
+    expect(parseEnv({ ...valid, PROPOSALES_COMPANY_ID: "5473" }).PROPOSALES_COMPANY_ID).toBe("5473");
   });
 
   test("rejects a malformed base URL", () => {

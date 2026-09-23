@@ -1,6 +1,10 @@
 /**
- * Prints the companies the Proposales API key can access, so you can pick
- * PROPOSALES_COMPANY_ID and see each company's public inbox token.
+ * Prints the companies the Proposales API key can access, with each one's id
+ * and public inbox token.
+ *
+ * The app reads this list itself and lets the manager switch between them, so
+ * no company id needs configuring; the ids are useful for scripts, which take
+ * `--company <id>`.
  *
  *   bun run scripts/whoami.ts
  */
@@ -18,7 +22,7 @@ try {
 
   for (const company of companies) {
     console.log(`  ${company.name}`);
-    console.log(`    PROPOSALES_COMPANY_ID = ${company.id}`);
+    console.log(`    id                    = ${company.id}`);
     console.log(`    currency              = ${company.currency}`);
     console.log(`    timezone              = ${company.timezone}`);
     console.log(

@@ -12,8 +12,11 @@ export const envSchema = z.object({
 
   /** Proposales API key — server-side use only, never exposed to the client. */
   PROPOSALES_API_KEY: z.string().min(1, "PROPOSALES_API_KEY is required"),
-  /** Company the proposals and content library belong to. */
-  PROPOSALES_COMPANY_ID: z.string().min(1, "PROPOSALES_COMPANY_ID is required"),
+  /**
+   * Optional default company. Companies are read from the API and chosen in
+   * the app; this only picks the starting one when no choice has been made.
+   */
+  PROPOSALES_COMPANY_ID: z.string().optional(),
   PROPOSALES_API_BASE_URL: z.url().default("https://api.proposales.com"),
 
   /** Vercel AI Gateway credentials. */

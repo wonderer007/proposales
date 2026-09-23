@@ -15,7 +15,7 @@ import {
   createProposalVersion,
   patchProposalDraft,
 } from "@/lib/proposales/client";
-import { configuredCompanyId } from "@/lib/proposales/company";
+import { getSelectedCompanyId } from "@/lib/proposales/companies";
 
 /**
  * Create, patch or version a proposal in Proposales (SPEC §6.4).
@@ -83,7 +83,7 @@ export async function submitProposalToProposales(inquiryId: string): Promise<Sub
       rfpId: inquiry.rfpId,
     },
     draft,
-    { companyId: configuredCompanyId() },
+    { companyId: await getSelectedCompanyId() },
   );
 
   try {

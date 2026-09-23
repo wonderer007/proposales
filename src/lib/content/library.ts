@@ -1,7 +1,7 @@
 import { db } from "@/lib/db/client";
 import { contentCatalog } from "@/lib/db/schema";
 import { listContent } from "@/lib/proposales/client";
-import { configuredCompanyId } from "@/lib/proposales/company";
+import { getSelectedCompanyId } from "@/lib/proposales/companies";
 import { pickLocalized } from "@/lib/proposales/schemas";
 import type { CatalogProduct } from "@/lib/builder/draft";
 
@@ -18,14 +18,18 @@ export type LibraryProduct = CatalogProduct & { description: string };
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-let cache: { products: LibraryProduct[]; expiresAt: number } | null = null;
+// Keyed by company: switching workspace must not serve another's products.
+let cache: { companyId: number; products: LibraryProduct[]; expiresAt: number } | null = null;
 
 export async function getContentLibrary(
   { force = false }: { force?: boolean } = {},
 ): Promise<LibraryProduct[]> {
-  if (!force && cache && cache.expiresAt > Date.now()) return cache.products;
+  const companyId = await getSelectedCompanyId();
 
-  const companyId = configuredCompanyId();
+  if (!force && cache && cache.companyId === companyId && cache.expiresAt > Date.now()) {
+    return cache.products;
+  }
+
   const [live, pricing] = await Promise.all([
     listContent({ companyId }),
     db.select().from(contentCatalog),
@@ -52,7 +56,7 @@ export async function getContentLibrary(
     ];
   });
 
-  cache = { products, expiresAt: Date.now() + CACHE_TTL_MS };
+  cache = { companyId, products, expiresAt: Date.now() + CACHE_TTL_MS };
 
   return products;
 }
