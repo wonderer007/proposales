@@ -24,11 +24,20 @@ export async function SiteHeader() {
           Inquiry to proposal
         </Link>
 
-        {/* The wordmark on the left is already the way home, so the bar
-            carries only the workspace. */}
-        {workspace ? (
-          <CompanySwitcher companies={workspace.companies} selectedId={workspace.selected.id} />
-        ) : null}
+        <div className="flex items-center gap-4">
+          {/* The wordmark on the left is already the way home, so the only nav
+              here is the one screen it does not reach. */}
+          <Link
+            href="/outreach"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-sm text-sm outline-none transition-colors focus-visible:ring-3"
+          >
+            Outreach
+          </Link>
+
+          {workspace ? (
+            <CompanySwitcher companies={workspace.companies} selectedId={workspace.selected.id} />
+          ) : null}
+        </div>
       </div>
     </header>
   );

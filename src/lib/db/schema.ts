@@ -6,6 +6,7 @@ import {
   numeric,
   jsonb,
   pgTable,
+  real,
   text,
   time,
   timestamp,
@@ -48,6 +49,22 @@ export const inquiries = pgTable(
     rfpSyncError: text("rfp_sync_error"),
     /** `WorkingDraft` (SPEC §6.1); typed once `src/lib/builder/draft.ts` lands in D7. */
     workingDraft: jsonb("working_draft"),
+    /**
+     * How often this customer repeats the event (D17). Classified once, lazily,
+     * by the outreach radar and never revisited — the inquiry text it is read
+     * from does not change.
+     */
+    cadence: text("cadence").$type<Cadence>(),
+    /**
+     * 0–1. Never read `cadence` directly: anything below 0.7 must be treated as
+     * `unknown` when scheduling, which is what `effectiveCadence` in
+     * `src/lib/outreach/cadence.ts` is for. The classifier's raw answer is kept
+     * so Screen 2 can still offer it as a suggestion.
+     */
+    cadenceConfidence: real("cadence_confidence"),
+    /** One line quoting what in the message implied the cadence. */
+    cadenceEvidence: text("cadence_evidence"),
+    cadenceSource: text("cadence_source").$type<CadenceSource>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -196,3 +213,56 @@ export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
 export type CatalogEntry = typeof contentCatalog.$inferSelect;
 export type NewCatalogEntry = typeof contentCatalog.$inferInsert;
+
+/**
+ * How often a customer repeats an event (D17). Classified by a non-chat LLM
+ * call from the inquiry message, stored once and never re-classified.
+ */
+export type Cadence = "annual" | "quarterly" | "monthly" | "one_off" | "unknown";
+
+/** Who decided the cadence: the classifier, or the manager accepting it. */
+export type CadenceSource = "ai" | "manager";
+
+/**
+ * What the manager did with an outreach lead.
+ *
+ * Only `contacted` exists: a lead the manager is not interested in is simply
+ * left alone, rather than being suppressed by a decision they cannot undo.
+ */
+export type OutreachAction = "contacted";
+
+/**
+ * A record that the manager reached out about one outreach lead (D17).
+ *
+ * Keyed by customer and the expected date the nudge was about, so reaching out
+ * this year says nothing about next year's cycle.
+ */
+export const outreachLog = pgTable(
+  "outreach_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Lowercased email, falling back to lowercased company name. */
+    customerKey: text("customer_key").notNull(),
+    /** The inquiry the recommendation was derived from, for traceability. */
+    sourceInquiryId: uuid("source_inquiry_id").references(() => inquiries.id, {
+      onDelete: "set null",
+    }),
+    /** ISO `YYYY-MM-DD` the lead was predicted for. */
+    nextExpectedDate: date("next_expected_date", { mode: "string" }).notNull(),
+    action: text("action").$type<OutreachAction>().notNull(),
+    /** The copy that was sent. */
+    message: text("message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("outreach_log_customer_date_action_key").on(
+      table.customerKey,
+      table.nextExpectedDate,
+      table.action,
+    ),
+    index("outreach_log_customer_key_idx").on(table.customerKey),
+  ],
+);
+
+export type OutreachLogEntry = typeof outreachLog.$inferSelect;
+export type NewOutreachLogEntry = typeof outreachLog.$inferInsert;
