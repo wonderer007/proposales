@@ -390,7 +390,8 @@ export function createAgentTools(
     addFlag: tool({
       description:
         "Raise a warning for the manager, e.g. that a room's capacity could not be " +
-        "verified from its description.",
+        "verified from its description. Always pass `itemId` when the warning is about a " +
+        "specific product, so it is cleared automatically if that product is removed.",
       inputSchema: z.object({
         severity: z.enum(["info", "warning"]),
         message: z.string(),

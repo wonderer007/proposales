@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  addFlag,
   addItem,
   applyItemSuggestion,
   confirmDate,
@@ -9,6 +10,8 @@ import {
   parseDraft,
   setItemDiscount,
   setItemOptions,
+  setRequirements,
+  removeItem,
   suggestItemOptions,
   upsertEvent,
   type CatalogProduct,
@@ -284,5 +287,58 @@ describe("readiness with optional and flexible items", () => {
     });
 
     expect(checkReadiness(draft, options).ready).toBe(true);
+  });
+});
+
+describe("warnings when a product is removed", () => {
+  function withWarnings() {
+    let draft = addItem(upsertEvent(emptyDraft(), event), { id: "i1", eventId: "e1", product: room });
+    draft = setRequirements(draft, [
+      { id: "r1", text: "Room with projector", status: "matched", itemId: "i1" },
+    ]);
+    draft = addFlag(draft, {
+      id: "f-item", severity: "warning", eventId: "e1", itemId: "i1",
+      message: "Capacity not verified for Vasa Room",
+    });
+
+    // The agent's own warning, attached to the event rather than the line.
+    return addFlag(draft, {
+      id: "f-event", severity: "warning", eventId: "e1",
+      message: "Vasa Room may be too small for 25 boardroom style",
+    });
+  }
+
+  test("clears the warning scoped to the removed item", () => {
+    expect(removeItem(withWarnings(), "i1").flags.map((flag) => flag.id)).not.toContain("f-item");
+  });
+
+  test("clears a warning that merely mentions the removed product", () => {
+    // It would otherwise describe something no longer on the offer.
+    expect(removeItem(withWarnings(), "i1").flags).toEqual([]);
+  });
+
+  test("keeps the warning when another line still carries that product", () => {
+    const twice = addItem(withWarnings(), { id: "i2", eventId: "e1", product: room });
+    const after = removeItem(twice, "i1");
+
+    expect(after.flags.map((flag) => flag.id)).toEqual(["f-event"]);
+  });
+
+  test("keeps warnings about other products", () => {
+    const draft = addFlag(withWarnings(), {
+      id: "f-other", severity: "info", eventId: "e1", message: "Lunch buffet needs a final count",
+    });
+
+    expect(removeItem(draft, "i1").flags.map((flag) => flag.id)).toEqual(["f-other"]);
+  });
+
+  test("still unmatches the requirement it covered", () => {
+    expect(removeItem(withWarnings(), "i1").requirements[0]).toMatchObject({
+      status: "unmatched", itemId: undefined,
+    });
+  });
+
+  test("removing an unknown item changes nothing", () => {
+    expect(removeItem(withWarnings(), "nope")).toEqual(withWarnings());
   });
 });

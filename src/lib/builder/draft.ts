@@ -412,12 +412,39 @@ export function addItem(
   return { ...draft, items: [...draft.items, item], flags };
 }
 
+/**
+ * Drops warnings left stranded by removing an item.
+ *
+ * Flags scoped to the item go by id. Flags that merely *mention* the product —
+ * an agent warning like "Vasa Room may be too small" attached to the event
+ * rather than the line — would otherwise linger and describe something that is
+ * no longer being offered. They are dropped too, unless another line still
+ * carries the same product.
+ */
+function withoutStrandedFlags(flags: Flag[], removed: DraftItem, remaining: DraftItem[]): Flag[] {
+  const stillOffered = remaining.some(
+    (item) => item.title.toLowerCase() === removed.title.toLowerCase(),
+  );
+
+  return flags.filter((flag) => {
+    if (flag.itemId === removed.id) return false;
+    if (stillOffered || flag.itemId) return true;
+
+    return !flag.message.toLowerCase().includes(removed.title.toLowerCase());
+  });
+}
+
 /** Removes an item, its flags, and unlinks any requirement pointing at it. */
 export function removeItem(draft: WorkingDraft, itemId: string): WorkingDraft {
+  const removed = draft.items.find((item) => item.id === itemId);
+  if (!removed) return draft;
+
+  const items = draft.items.filter((item) => item.id !== itemId);
+
   return {
     ...draft,
-    items: draft.items.filter((item) => item.id !== itemId),
-    flags: draft.flags.filter((flag) => flag.itemId !== itemId),
+    items,
+    flags: withoutStrandedFlags(draft.flags, removed, items),
     requirements: draft.requirements.map((requirement) =>
       requirement.itemId === itemId
         ? { ...requirement, status: "unmatched" as const, itemId: undefined }
