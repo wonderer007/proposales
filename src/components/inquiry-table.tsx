@@ -24,9 +24,8 @@ export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
         <TableRow>
           <TableHead className="pl-4">Contact</TableHead>
           <TableHead className="hidden md:table-cell">Email</TableHead>
-          <TableHead>First event</TableHead>
+          <TableHead>Event date</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="hidden lg:table-cell">Proposal</TableHead>
           <TableHead className="hidden pr-4 text-right sm:table-cell">Created</TableHead>
         </TableRow>
       </TableHeader>
@@ -58,19 +57,24 @@ export function InquiryTable({ inquiries }: { inquiries: InquiryListRow[] }) {
                 {inquiry.email}
               </TableCell>
               <TableCell className="tabular-nums">
-                {inquiry.firstEventDate ? (
-                  formatDateCompact(inquiry.firstEventDate)
+                {inquiry.eventDate ? (
+                  formatDateCompact(inquiry.eventDate)
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={badge.variant} className={badge.className}>
-                  {status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground hidden lg:table-cell">
-                {inquiry.activeProposalStatus ?? "—"}
+                <span className="flex items-center gap-1.5">
+                  <Badge variant={badge.variant} className={badge.className}>
+                    {status}
+                  </Badge>
+                  {/* Which version that status belongs to, when there is one. */}
+                  {inquiry.activeProposalVersion !== null ? (
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      v{inquiry.activeProposalVersion}
+                    </span>
+                  ) : null}
+                </span>
               </TableCell>
               <TableCell className="text-muted-foreground hidden pr-4 text-right tabular-nums sm:table-cell">
                 {formatTimestamp(inquiry.createdAt)}

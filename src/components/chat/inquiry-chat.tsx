@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "cn";
 
+/** The obvious first thing to ask, offered as a one-click starter. */
+const OPENING_QUESTION = "What should we offer for this inquiry?";
+
 function messageText(message: UIMessage): string {
   // A reply that pauses for tool calls arrives as several text parts. Joined
   // with nothing they run together mid-sentence, so separate them.
@@ -63,8 +66,7 @@ export function InquiryChat({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isStreaming]);
 
-  function submit() {
-    const text = input.trim();
+  function send(text: string) {
     if (!text || isStreaming) return;
 
     clearError();
@@ -72,13 +74,29 @@ export function InquiryChat({
     void sendMessage({ text });
   }
 
+  function submit() {
+    send(input.trim());
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
         {messages.length === 0 ? (
-          <p className="text-muted-foreground flex h-full items-center justify-center px-6 text-center text-sm">
-            Ask what the customer needs — for example “What should we offer for this inquiry?”
-          </p>
+          <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm">
+            <p>Ask what the customer needs — or start with:</p>
+            {/*
+              One click to begin. The same text the manager would type, sent
+              straight away rather than dropped into the box to be confirmed.
+            */}
+            <button
+              type="button"
+              disabled={isStreaming}
+              onClick={() => send(OPENING_QUESTION)}
+              className="text-foreground rounded-md border border-dashed px-3 py-1.5 underline-offset-4 hover:underline disabled:opacity-50"
+            >
+              “{OPENING_QUESTION}”
+            </button>
+          </div>
         ) : (
           messages.map((message) => {
             const activity = message.role === "assistant" ? toolActivity(message) : [];

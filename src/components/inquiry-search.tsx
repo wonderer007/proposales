@@ -37,6 +37,10 @@ export function InquirySearch() {
       if (value.trim()) params.set("q", value.trim());
       else params.delete("q");
 
+      // A new search starts at the beginning; keeping the old page number
+      // would land the manager on an empty page.
+      params.delete("page");
+
       const query = params.toString();
       startTransition(() => {
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });

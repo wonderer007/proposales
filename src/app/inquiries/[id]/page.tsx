@@ -4,7 +4,6 @@ import { InquiryHeader } from "@/components/inquiry-header";
 import { InquiryChat } from "@/components/chat/inquiry-chat";
 import { PageHeader } from "@/components/page-header";
 import { ProposalPanel } from "@/components/proposal-panel";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseDraft } from "@/lib/builder/draft";
 import { diffDrafts } from "@/lib/builder/diff";
@@ -103,9 +102,6 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
               {formatTimestamp(inquiry.createdAt)}
             </time>
           </>
-        }
-        actions={
-          <Badge variant="outline">{inquiry.language === "sv" ? "Svenska" : "English"}</Badge>
         }
       />
 
