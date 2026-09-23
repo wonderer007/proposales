@@ -118,7 +118,7 @@ describe("buildBlock", () => {
       currency: "EUR", quantity: 1, quantitySource: "computed",
       role: "core", optional: false, optionalPicked: false, quantityEditable: false,
       quantityMin: null, quantityMax: null, discount: null, policyOverride: null,
-      suggested: null,
+      choiceGroup: null, suggested: null,
     });
 
     expect(block).toEqual({
@@ -143,7 +143,7 @@ describe("buildBlock", () => {
       currency: "EUR", quantity: 25, quantitySource: "computed",
       role: "core", optional: false, optionalPicked: false, quantityEditable: false,
       quantityMin: null, quantityMax: null, discount: null, policyOverride: null,
-      suggested: null,
+      choiceGroup: null, suggested: null,
     });
 
     // 850 × 1.12 = 952
@@ -211,7 +211,7 @@ describe("buildBlock with optional and flexible settings", () => {
     vatRate: 0.12, currency: "EUR", quantity: 25, quantitySource: "computed" as const,
     role: "core" as const, optional: false, optionalPicked: false,
     quantityEditable: false, quantityMin: null, quantityMax: null,
-    discount: null, policyOverride: null, suggested: null,
+    discount: null, policyOverride: null, choiceGroup: null, suggested: null,
   };
 
   test("sends nothing extra for a plain committed item", () => {

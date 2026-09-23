@@ -162,6 +162,30 @@ export const contentCatalog = pgTable("content_catalog", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Proposal templates mirrored from Proposales (never created by us).
+ *
+ * A template is itself a proposal with `status: "template"`. We keep a local
+ * copy so the agent can match one by title without a round trip, and so the
+ * list is stable between syncs.
+ */
+export const proposalTemplates = pgTable("proposal_templates", {
+  /** The template proposal's uuid in Proposales. */
+  uuid: text("uuid").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  title: text("title").notNull(),
+  language: text("language").notNull(),
+  /** Carried onto proposals built from this template. */
+  backgroundImageId: integer("background_image_id"),
+  backgroundImageUuid: text("background_image_uuid"),
+  /** Attachment ids to copy, e.g. terms and conditions. */
+  attachmentIds: jsonb("attachment_ids").$type<number[]>().notNull().default([]),
+  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ProposalTemplate = typeof proposalTemplates.$inferSelect;
+export type NewProposalTemplate = typeof proposalTemplates.$inferInsert;
+
 export type Inquiry = typeof inquiries.$inferSelect;
 export type NewInquiry = typeof inquiries.$inferInsert;
 export type InquiryEvent = typeof inquiryEvents.$inferSelect;

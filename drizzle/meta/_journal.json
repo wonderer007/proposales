@@ -29,6 +29,13 @@
       "when": 1790152298773,
       "tag": "0003_powerful_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790176017212,
+      "tag": "0004_bouncy_meteorite",
+      "breakpoints": true
     }
   ]
 }

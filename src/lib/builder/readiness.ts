@@ -1,5 +1,5 @@
 import { formatDate } from "@/lib/format";
-import type { WorkingDraft } from "./draft";
+import { choiceGroups, type WorkingDraft } from "./draft";
 
 /** Whether the draft may be turned into a proposal, and why not (SPEC §6.3). */
 export type Readiness = { ready: boolean; reasons: string[] };
@@ -46,8 +46,26 @@ export function checkReadiness(
       reasons.push(`${name}: nothing selected yet.`);
     } else if (items.every((item) => item.optional)) {
       // An event made entirely of optional items could be declined down to
-      // nothing, which is not an offer (SPEC §6.5 rule 3).
-      reasons.push(`${name}: everything is optional — at least one item must be included.`);
+      // nothing, which is not an offer (SPEC §6.5 rule 3) — unless the
+      // customer is being asked to choose between alternatives, where picking
+      // one is the point.
+      const hasChoice = [...choiceGroups(draft, event.id).values()].some(
+        (group) => group.length > 1,
+      );
+
+      if (!hasChoice) {
+        reasons.push(`${name}: everything is optional — at least one item must be included.`);
+      }
+    }
+
+    // A group of one is not a choice; it is an optional item mislabelled.
+    for (const [groupName, group] of choiceGroups(draft, event.id)) {
+      if (group.length < 2) {
+        reasons.push(
+          `${name}: "${groupName}" offers only ${group[0]?.title ?? "one option"} — ` +
+            `a choice needs at least two.`,
+        );
+      }
     }
 
     items.forEach((item) => {

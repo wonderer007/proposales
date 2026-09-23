@@ -26,6 +26,7 @@ export function ItemOptions({ inquiryId, item }: { inquiryId: string; item: Draf
   const [min, setMin] = useState(item.quantityMin?.toString() ?? "");
   const [max, setMax] = useState(item.quantityMax?.toString() ?? "");
   const [comment, setComment] = useState(item.comment ?? "");
+  const [choice, setChoice] = useState(item.choiceGroup ?? "");
 
   function save(options: Parameters<typeof updateItemOptions>[2]) {
     startTransition(async () => {
@@ -145,6 +146,24 @@ export function ItemOptions({ inquiryId, item }: { inquiryId: string; item: Draf
               </div>
             </div>
           ) : null}
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor={`choice-${item.id}`} className="text-xs">
+            Customer chooses between
+          </Label>
+          <Input
+            id={`choice-${item.id}`}
+            value={choice}
+            disabled={isPending}
+            placeholder="e.g. the meeting room"
+            onChange={(event) => setChoice(event.target.value)}
+            onBlur={() => save({ choiceGroup: choice.trim() || null })}
+            className="h-8 text-xs"
+          />
+          <p className="text-muted-foreground text-xs">
+            Give two or more lines the same name to offer them as alternatives.
+          </p>
         </div>
 
         <div className="space-y-1">

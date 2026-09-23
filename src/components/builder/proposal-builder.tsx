@@ -1,4 +1,4 @@
-import { AlertTriangle, Info, Sparkles } from "lucide-react";
+import { AlertTriangle, FileText, Info, Sparkles } from "lucide-react";
 
 import { DateConfirm } from "@/components/builder/date-confirm";
 import { ItemOptions } from "@/components/builder/item-options";
@@ -65,6 +65,11 @@ function ItemStateBadges({ item }: { item: DraftItem }) {
       {item.optional ? (
         <Badge variant="secondary" className="align-middle">
           optional
+        </Badge>
+      ) : null}
+      {item.choiceGroup ? (
+        <Badge variant="outline" className="align-middle">
+          choice: {item.choiceGroup}
         </Badge>
       ) : null}
       {item.quantityEditable ? (
@@ -160,9 +165,24 @@ export function ProposalBuilder({
   const action = proposalAction(activeProposalStatus);
   const label = proposalActionLabel(action);
 
+  const templateBanner = (
+    <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+      <FileText className="size-3.5 shrink-0" aria-hidden />
+      {draft.template ? (
+        <span>
+          Built from the <span className="text-foreground font-medium">{draft.template.title}</span>{" "}
+          template
+        </span>
+      ) : (
+        <span>No template chosen — the assistant will suggest one.</span>
+      )}
+    </div>
+  );
+
   if (draft.events.length === 0 && draft.items.length === 0) {
     return (
       <div className="space-y-4">
+        {templateBanner}
         <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-12 text-center text-sm">
           Nothing shortlisted yet. Ask the assistant what the customer needs and the draft will
           fill in here.
@@ -173,6 +193,8 @@ export function ProposalBuilder({
 
   return (
     <div className="space-y-6">
+      {templateBanner}
+
       {draft.events.map((event) => {
         const items = draft.items.filter((item) => item.eventId === event.id);
 

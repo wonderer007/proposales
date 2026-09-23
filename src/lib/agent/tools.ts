@@ -16,6 +16,7 @@ import {
   setBudget,
   setItemOptions,
   setRevisionNote,
+  setTemplate,
   setRequirements,
   suggestItemOptions,
   upsertEvent,
@@ -26,6 +27,7 @@ import { getContentLibrary } from "@/lib/content/library";
 import { getProposalsForInquiry } from "@/lib/db/queries";
 import { getPricingPolicy } from "@/lib/pricing/policy";
 import { getRecoveryOptions, recordRejectionFor } from "@/lib/recovery/apply";
+import { getTemplates } from "@/lib/proposals/templates";
 import { describeSelections, type RecipientSelections } from "@/lib/proposals/selections";
 import { db } from "@/lib/db/client";
 import { withDraftLock } from "./draft-lock";
@@ -293,6 +295,62 @@ export function createAgentTools(
       },
     }),
 
+    listTemplates: tool({
+      description:
+        "The proposal templates this hotel has. A template carries the design, " +
+        "background image and standard attachments such as terms. Read this before " +
+        "choosing one; you cannot create templates, only pick from these.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const templates = await getTemplates();
+
+        return templates.map((template) => ({
+          uuid: template.uuid,
+          title: template.title,
+          language: template.language,
+          hasAttachments: template.attachmentIds.length > 0,
+        }));
+      },
+    }),
+
+    chooseTemplate: tool({
+      description:
+        "Pick the template this proposal will be built from, matching its title to the " +
+        "occasion — for example a conference inquiry to a 'Conference' template. Pass " +
+        "uuid: null to build without one, but only after the manager has agreed to that. " +
+        "If no template clearly fits, ask the manager which to use instead of guessing.",
+      inputSchema: z.object({
+        uuid: z
+          .string()
+          .nullable()
+          .describe("From listTemplates, or null for no template."),
+        reason: z.string().describe("One short line on why this template fits."),
+      }),
+      execute: async ({ uuid, reason }) =>
+        // The reason is echoed back so it lands in the transcript beside the
+        // choice, rather than only in the reply text.
+        mutate<(DraftSummary & { chose?: string; because?: string }) | ToolError>(async (draft) => {
+          if (uuid === null) {
+            return { ...(await saveDraft(setTemplate(draft, null))), chose: "none", because: reason };
+          }
+
+          const template = (await getTemplates()).find((candidate) => candidate.uuid === uuid);
+          if (!template) {
+            return {
+              error:
+                `No template with uuid ${uuid} exists in this workspace. ` +
+                `Call listTemplates and use one from it.`,
+            };
+          }
+
+          return {
+            ...(await saveDraft(setTemplate(draft, { uuid: template.uuid, title: template.title }))),
+            chose: template.title,
+            because: reason,
+          };
+        }),
+    }),
+
     getWorkingDraft: tool({
       description: "Read the current working draft for this inquiry.",
       inputSchema: z.object({}),
@@ -422,6 +480,15 @@ export function createAgentTools(
           .describe("Lowest quantity the customer may choose."),
         quantityMax: z.number().nullable().optional(),
         comment: z.string().optional().describe("A note shown to the customer on this line."),
+        choiceGroup: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "Name a choice, e.g. 'the meeting room', to offer several products as " +
+              "alternatives the customer picks between. Give the same name to each " +
+              "alternative. Doing this makes each one optional automatically.",
+          ),
       }),
       execute: async ({ itemId, origin, rationale, ...options }) =>
         mutate<DraftSummary | ToolError>((draft) => {

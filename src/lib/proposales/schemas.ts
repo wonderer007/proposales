@@ -203,9 +203,11 @@ export const createProposalRequestSchema = z.object({
   tracking: z
     .object({
       created_from_rfp: z.number().int().min(1).optional(),
-      created_from_template: z.uuid().optional(),
+      created_from_template: z.string().optional(),
     })
     .optional(),
+  background_image: z.object({ id: z.number().int(), uuid: z.string() }).optional(),
+  attachments: z.array(z.object({ id: z.number().int() })).optional(),
   tax_options: taxOptionsSchema.optional(),
   blocks: z.array(proposalBlockInputSchema).optional(),
 });
@@ -265,10 +267,23 @@ export const proposalSchema = z.object({
   status_changed_at: z.number().int().optional(),
   updated_at: z.number().int().optional(),
   blocks: z.array(proposalBlockStateSchema).optional(),
+  /** Present on templates; carried onto proposals built from one. */
+  background_image: z.object({ id: z.number().int(), uuid: z.string() }).nullish(),
+  attachments: z.array(z.object({ id: z.number().int(), name: z.string() })).optional(),
 });
 export type Proposal = z.infer<typeof proposalSchema>;
 
 export const getProposalResponseSchema = z.object({ data: proposalSchema });
+
+export const companyTemplateSchema = z.object({
+  uuid: z.string(),
+  title: z.string(),
+  language: z.string(),
+  background_image_uuid: z.string().nullish(),
+});
+export type CompanyTemplate = z.infer<typeof companyTemplateSchema>;
+
+export const listTemplatesResponseSchema = z.object({ data: z.array(companyTemplateSchema) });
 
 export const proposalMutationResponseSchema = z.object({
   proposal: z.object({ uuid: z.string(), url: z.string() }),

@@ -114,6 +114,15 @@ export const draftItemSchema = z.object({
   policyOverride: z.object({ reason: z.string(), at: z.string() }).nullable().default(null),
   /** Shown to the recipient on the block. */
   comment: z.string().optional(),
+  /**
+   * Items sharing a name are alternatives: the customer picks one of them.
+   *
+   * "A room with a projector for 30" can be answered by two rooms. Offering
+   * both as plain optional lines would let the customer decline both; a choice
+   * group says exactly one is expected, and the totals and readiness rules
+   * treat it that way.
+   */
+  choiceGroup: z.string().nullable().default(null),
   /** An agent proposal awaiting the manager's Apply (see above). */
   suggested: itemSuggestionSchema.nullable().default(null),
 });
@@ -142,6 +151,14 @@ export const workingDraftSchema = z.object({
   mode: z.enum(["normal", "recovery"]).default("normal"),
   /** "What's changed" text for the next version (D14). */
   revisionNote: z.string().nullable().default(null),
+  /**
+   * The Proposales template this proposal is built from. Templates are only
+   * ever chosen, never created — the uuid must exist in `proposal_templates`.
+   */
+  template: z
+    .object({ uuid: z.string(), title: z.string() })
+    .nullable()
+    .default(null),
   events: z.array(draftEventSchema),
   items: z.array(draftItemSchema),
   requirements: z.array(requirementSchema),
@@ -167,6 +184,7 @@ export function emptyDraft(language: WorkingDraft["language"] = "en"): WorkingDr
     language,
     mode: "normal",
     revisionNote: null,
+    template: null,
     events: [],
     items: [],
     requirements: [],
@@ -396,6 +414,7 @@ export function addItem(
     quantityMax: role === "addon" ? quantity : null,
     discount: null,
     policyOverride: null,
+    choiceGroup: null,
     suggested: null,
   };
 
@@ -483,6 +502,18 @@ export function setBudget(draft: WorkingDraft, budget: WorkingDraft["budget"]): 
   return { ...draft, budget };
 }
 
+/** The alternatives on an event, grouped by choice name. */
+export function choiceGroups(draft: WorkingDraft, eventId: string): Map<string, DraftItem[]> {
+  const groups = new Map<string, DraftItem[]>();
+
+  for (const item of draft.items) {
+    if (item.eventId !== eventId || !item.choiceGroup) continue;
+    groups.set(item.choiceGroup, [...(groups.get(item.choiceGroup) ?? []), item]);
+  }
+
+  return groups;
+}
+
 /** Items belonging to one event, in insertion order. */
 export function itemsForEvent(draft: WorkingDraft, eventId: string): DraftItem[] {
   return draft.items.filter((item) => item.eventId === eventId);
@@ -499,6 +530,7 @@ export type ItemOptions = {
   quantityMin?: number | null;
   quantityMax?: number | null;
   comment?: string;
+  choiceGroup?: string | null;
 };
 
 /**
@@ -531,7 +563,12 @@ export function setItemOptions(
         ...(options.quantityMin !== undefined ? { quantityMin: options.quantityMin } : {}),
         ...(options.quantityMax !== undefined ? { quantityMax: options.quantityMax } : {}),
         ...(options.comment !== undefined ? { comment: options.comment } : {}),
+        ...(options.choiceGroup !== undefined ? { choiceGroup: options.choiceGroup } : {}),
       };
+
+      // The customer chooses between alternatives, so each must be declinable
+      // on its own; a required alternative is a contradiction.
+      if (next.choiceGroup) next.optional = true;
 
       if (!next.quantityEditable) {
         next.quantityMin = null;
@@ -622,4 +659,12 @@ export function setMode(draft: WorkingDraft, mode: WorkingDraft["mode"]): Workin
 
 export function setRevisionNote(draft: WorkingDraft, revisionNote: string | null): WorkingDraft {
   return { ...draft, revisionNote };
+}
+
+/** Chooses the template this proposal is built from, or clears it. */
+export function setTemplate(
+  draft: WorkingDraft,
+  template: WorkingDraft["template"],
+): WorkingDraft {
+  return { ...draft, template };
 }

@@ -13,7 +13,8 @@
     "db:migrate": "bun run scripts/migrate.ts",
     "db:seed": "bun run scripts/seed-db.ts",
     "content:seed": "bun run scripts/seed-content.ts",
-    "eval": "bun run scripts/eval.ts"
+    "eval": "bun run scripts/eval.ts",
+    "templates:sync": "bun run scripts/sync-templates.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.112",

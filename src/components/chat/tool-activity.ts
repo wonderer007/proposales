@@ -71,6 +71,16 @@ export function describeToolCall(part: ToolPart, done = true): string | null {
     case "setBudget":
       return "Noted the budget";
 
+    case "listTemplates":
+      return "Looked up the proposal templates";
+
+    case "chooseTemplate": {
+      const chose = (part.output as { chose?: string } | undefined)?.chose;
+      if (chose === "none") return "Building without a template";
+
+      return chose ? `Chose the ${chose} template` : "Chose a template";
+    }
+
     default:
       return name;
   }
@@ -101,6 +111,10 @@ function progressLabel(name: string, input: Record<string, unknown>): string {
       return "Clearing a warning";
     case "setBudget":
       return "Noting the budget";
+    case "listTemplates":
+      return "Looking up the proposal templates";
+    case "chooseTemplate":
+      return "Choosing a template";
     default:
       return "Working";
   }

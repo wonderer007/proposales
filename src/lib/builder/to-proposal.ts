@@ -1,6 +1,7 @@
 import { formatDate, formatTime } from "@/lib/format";
 import type { CreateProposalRequest, ProposalBlockInput } from "@/lib/proposales/schemas";
 import { splitName } from "@/lib/inquiries/rfp";
+import { choiceGroups } from "./draft";
 import type { DraftEvent, DraftItem, WorkingDraft } from "./draft";
 
 /**
@@ -19,7 +20,22 @@ export type ProposalInquiry = {
   rfpId: number | null;
 };
 
-export type ToProposalConfig = { companyId: number };
+/**
+ * The template a proposal is built from.
+ *
+ * `created_from_template` alone records lineage but copies nothing — verified
+ * against the live API — so the background image and attachments are carried
+ * over explicitly. The template's own product blocks are deliberately not
+ * copied: they are examples, and would put the wrong rooms on every proposal.
+ */
+export type ProposalTemplateRef = {
+  uuid: string;
+  backgroundImageId: number | null;
+  backgroundImageUuid: string | null;
+  attachmentIds: number[];
+};
+
+export type ToProposalConfig = { companyId: number; template?: ProposalTemplateRef | null };
 
 const COPY = {
   en: {
@@ -31,6 +47,8 @@ const COPY = {
     notes: "Still to confirm",
     whatsChanged: "What's changed",
     arrangements: "How we have arranged it",
+    choices: "Choose one",
+    chooseOne: (what: string) => `For ${what}, pick whichever suits you — one is included in the price:`,
     extras: "Optional extras",
     extrasIntro: "Yours to include or leave out — the price above does not assume them.",
     rooms: (count: number, guests: number, names: string) =>
@@ -51,6 +69,8 @@ const COPY = {
     notes: "Kvar att bekräfta",
     whatsChanged: "Det här har ändrats",
     arrangements: "Så har vi lagt upp det",
+    choices: "Välj ett alternativ",
+    chooseOne: (what: string) => `För ${what}, välj det som passar — ett ingår i priset:`,
     extras: "Valfria tillägg",
     extrasIntro: "Ni väljer själva om de ska ingå — priset ovan förutsätter dem inte.",
     rooms: (count: number, guests: number, names: string) =>
@@ -165,7 +185,13 @@ function describeArrangements(draft: WorkingDraft): string[] {
 
   for (const event of draft.events) {
     const rooms = draft.items
-      .filter((item) => item.eventId === event.id && item.contentType === "meetingRoom")
+      .filter(
+        (item) =>
+          item.eventId === event.id &&
+          item.contentType === "meetingRoom" &&
+          // Alternatives are one room the customer picks, not several booked.
+          !item.choiceGroup,
+      )
       .map((item) => item.title);
 
     if (rooms.length < 2) continue;
@@ -227,13 +253,29 @@ export function buildDescription(draft: WorkingDraft, inquiry: ProposalInquiry):
     for (const line of arrangements) lines.push(`- ${line}`);
   }
 
+  // Alternatives read as duplicates on a priced list unless the customer is
+  // told that picking one is the point.
+  const choices = new Map<string, string[]>();
+  for (const event of draft.events) {
+    for (const [name, group] of choiceGroups(draft, event.id)) {
+      if (group.length > 1) choices.set(name, group.map((item) => item.title));
+    }
+  }
+
+  if (choices.size > 0) {
+    lines.push("", `**${copy.choices}**`);
+    for (const [name, titles] of choices) {
+      lines.push(copy.chooseOne(name), ...titles.map((title) => `- ${title}`));
+    }
+  }
+
   // Value-added services are a choice, so they are named rather than left to
   // be spotted among the priced lines.
   // The same extra booked for each day of a conference is one offer to the
   // customer, not several; the priced blocks below carry the quantities.
   const extras = new Map<string, string>();
   for (const item of draft.items) {
-    if (item.role !== "addon") continue;
+    if (item.role !== "addon" || item.choiceGroup) continue;
     if (!extras.has(item.title) || item.comment) {
       extras.set(item.title, item.comment ? ` — ${item.comment}` : "");
     }
@@ -315,7 +357,7 @@ export function buildBlock(item: DraftItem): ProposalBlockInput {
 export function toProposalRequest(
   inquiry: ProposalInquiry,
   draft: WorkingDraft,
-  { companyId }: ToProposalConfig,
+  { companyId, template }: ToProposalConfig,
 ): CreateProposalRequest {
   const { first_name, last_name } = splitName(inquiry.contactName);
 
@@ -340,6 +382,21 @@ export function toProposalRequest(
   };
 
   if (inquiry.rfpId) body.tracking = { created_from_rfp: inquiry.rfpId };
+
+  if (template) {
+    body.tracking = { ...body.tracking, created_from_template: template.uuid };
+
+    if (template.backgroundImageId !== null && template.backgroundImageUuid !== null) {
+      body.background_image = {
+        id: template.backgroundImageId,
+        uuid: template.backgroundImageUuid,
+      };
+    }
+
+    if (template.attachmentIds.length > 0) {
+      body.attachments = template.attachmentIds.map((id) => ({ id }));
+    }
+  }
 
   return body;
 }

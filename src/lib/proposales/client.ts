@@ -7,9 +7,11 @@ import {
   errorResponseSchema,
   getProposalResponseSchema,
   listCompaniesResponseSchema,
+  listTemplatesResponseSchema,
   listContentResponseSchema,
   proposalMutationResponseSchema,
   type Company,
+  type CompanyTemplate,
   type ContentItem,
   type ContentMutationResponse,
   type CreateContentRequest,
@@ -160,6 +162,17 @@ export async function listCompanies(): Promise<Company[]> {
     method: "GET",
     path: "/v3/companies",
     schema: listCompaniesResponseSchema,
+  });
+
+  return data;
+}
+
+/** Proposal templates a company has. We read them; we never create one. */
+export async function listCompanyTemplates(companyId: number): Promise<CompanyTemplate[]> {
+  const { data } = await request({
+    method: "GET",
+    path: `/v3/companies/${companyId}/templates`,
+    schema: listTemplatesResponseSchema,
   });
 
   return data;

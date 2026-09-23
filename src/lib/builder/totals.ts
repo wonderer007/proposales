@@ -85,6 +85,34 @@ export function maximumQuantity(item: DraftItem): number {
   return Math.max(item.quantity, item.quantityMax);
 }
 
+/**
+ * Reduces each choice group to the one line that will actually be charged.
+ *
+ * The customer picks one alternative, so counting all of them would overstate
+ * the offer. `pick` decides which represents the group: the cheapest for what
+ * is certain to be paid, the dearest for the ceiling.
+ */
+function resolveChoices(items: DraftItem[], pick: "cheapest" | "dearest"): DraftItem[] {
+  const groups = new Map<string, DraftItem[]>();
+  const plain: DraftItem[] = [];
+
+  for (const item of items) {
+    if (!item.choiceGroup) plain.push(item);
+    else groups.set(item.choiceGroup, [...(groups.get(item.choiceGroup) ?? []), item]);
+  }
+
+  for (const group of groups.values()) {
+    // An explicitly picked alternative wins over price.
+    const picked = group.find((item) => item.optionalPicked);
+    const byPrice = [...group].sort((a, b) => a.unitPriceMinor - b.unitPriceMinor);
+    const chosen = picked ?? (pick === "cheapest" ? byPrice[0] : byPrice.at(-1));
+
+    if (chosen) plain.push(chosen);
+  }
+
+  return plain;
+}
+
 function summarise(items: DraftItem[], quantityOf: (item: DraftItem) => number): TotalsBreakdown {
   const lines = items.map((item) => lineTotal(item, quantityOf(item)));
 
@@ -111,11 +139,15 @@ function summarise(items: DraftItem[], quantityOf: (item: DraftItem) => number):
 }
 
 export function calculateTotals(draft: WorkingDraft): DraftTotals {
+  // A chosen alternative is money the customer will spend, so the cheapest
+  // option counts as committed even though each line is individually optional.
   const committed = summarise(
-    draft.items.filter((item) => !item.optional),
+    resolveChoices(draft.items, "cheapest").filter(
+      (item) => !item.optional || item.choiceGroup !== null,
+    ),
     (item) => item.quantity,
   );
-  const maximum = summarise(draft.items, maximumQuantity);
+  const maximum = summarise(resolveChoices(draft.items, "dearest"), maximumQuantity);
 
   return {
     ...committed,

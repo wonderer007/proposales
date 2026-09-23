@@ -9,7 +9,7 @@ const room: DraftItem = {
   unit: "day", contentType: "meetingRoom", unitPriceMinor: 85_000, vatRate: 0.25,
   currency: "EUR", quantity: 1, quantitySource: "computed",
   role: "core", optional: false, optionalPicked: false, quantityEditable: false,
-  quantityMin: null, quantityMax: null, discount: null, policyOverride: null, suggested: null,
+  quantityMin: null, quantityMax: null, discount: null, policyOverride: null, choiceGroup: null, suggested: null,
   comment: "Loyal customer rate",
 };
 

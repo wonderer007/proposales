@@ -25,10 +25,12 @@ describe("the agent's tool set", () => {
         "getRecoveryOptions",
         "getWorkingDraft",
         "listContentLibrary",
+        "listTemplates",
         "removeEvent",
         "recordRejection",
         "removeItem",
         "setBudget",
+        "chooseTemplate",
         "draftChangeNote",
         "setItemOptions",
         "setRequirements",
@@ -100,6 +102,21 @@ describe("the agent's tool set", () => {
       "role",
       "variationId",
     ]);
+  });
+
+  test("the agent cannot create or edit a template", () => {
+    // It may only choose from what Proposales already has.
+    const forbidden = /^(create|new|add|edit|update|rename|delete)[A-Z]?\w*[Tt]emplate/;
+
+    expect(names.filter((name) => forbidden.test(name))).toEqual([]);
+  });
+
+  test("choosing a template takes a uuid, never template content", () => {
+    const schema = (
+      tools.chooseTemplate as { inputSchema?: { shape?: Record<string, unknown> } }
+    ).inputSchema;
+
+    expect(Object.keys(schema?.shape ?? {}).sort()).toEqual(["reason", "uuid"]);
   });
 
   test("draftChangeNote only writes text", () => {

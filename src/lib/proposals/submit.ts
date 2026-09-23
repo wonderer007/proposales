@@ -16,6 +16,7 @@ import {
   patchProposalDraft,
 } from "@/lib/proposales/client";
 import { getSelectedCompanyId } from "@/lib/proposales/companies";
+import { getTemplate, toTemplateRef } from "./templates";
 
 /**
  * Create, patch or version a proposal in Proposales (SPEC §6.4).
@@ -83,7 +84,14 @@ export async function submitProposalToProposales(inquiryId: string): Promise<Sub
       rfpId: inquiry.rfpId,
     },
     draft,
-    { companyId: await getSelectedCompanyId() },
+    {
+      companyId: await getSelectedCompanyId(),
+      // A template the workspace no longer has is simply not applied, rather
+      // than failing a submission the manager is ready to send.
+      template: draft.template
+        ? await getTemplate(draft.template.uuid).then((t) => (t ? toTemplateRef(t) : null))
+        : null,
+    },
   );
 
   try {
