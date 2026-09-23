@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { WorkingDraft } from "@/lib/builder/draft";
 import type { Readiness } from "@/lib/builder/readiness";
-import type { RevisionSummary } from "@/components/builder/proposal-builder";
+import type { RecoverySummary, RevisionSummary } from "@/components/builder/proposal-builder";
 import type { Proposal } from "@/lib/db/schema";
 
 /**
@@ -18,6 +18,7 @@ export function ProposalPanel({
   readiness,
   activeProposalStatus,
   revision,
+  recovery,
   proposals,
 }: {
   inquiryId: string;
@@ -25,6 +26,7 @@ export function ProposalPanel({
   readiness: Readiness;
   activeProposalStatus: string | null;
   revision: RevisionSummary | null;
+  recovery: RecoverySummary | null;
   proposals: Proposal[];
 }) {
   return (
@@ -51,6 +53,7 @@ export function ProposalPanel({
               readiness={readiness}
               activeProposalStatus={activeProposalStatus}
               revision={revision}
+              recovery={recovery}
             />
           </TabsContent>
           <TabsContent value="history">

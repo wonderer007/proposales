@@ -23,6 +23,10 @@ import {
 } from "@/lib/builder/draft";
 import { calculateTotals } from "@/lib/builder/totals";
 import { getContentLibrary } from "@/lib/content/library";
+import { getProposalsForInquiry } from "@/lib/db/queries";
+import { getPricingPolicy } from "@/lib/pricing/policy";
+import { getRecoveryOptions, recordRejectionFor } from "@/lib/recovery/apply";
+import { describeSelections, type RecipientSelections } from "@/lib/proposals/selections";
 import { db } from "@/lib/db/client";
 import { withDraftLock } from "./draft-lock";
 import { inquiries } from "@/lib/db/schema";
@@ -196,6 +200,95 @@ export function createAgentTools(
           unitPrice: `${(product.unitPriceMinor / 100).toFixed(2)} ${product.currency}`,
           vatRate: product.vatRate,
           currency: product.currency,
+        }));
+      },
+    }),
+
+    getPricingPolicy: tool({
+      description:
+        "The limits on what may be conceded on price. Read this before discussing any " +
+        "reduction — you may never propose one outside these limits.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const policy = getPricingPolicy();
+
+        return {
+          maxPercentDiscount: policy.maxPercentDiscount,
+          floorUnitPriceByType: Object.fromEntries(
+            Object.entries(policy.floorUnitPriceMinorByType).map(([type, minor]) => [
+              type,
+              (minor / 100).toFixed(2),
+            ]),
+          ),
+          allowDiscountOnAddons: policy.allowDiscountOnAddons,
+          requireCommentOnDiscount: policy.requireCommentOnDiscount,
+          note: "You cannot apply a discount. Only the manager can, on the card.",
+        };
+      },
+    }),
+
+    recordRejection: tool({
+      description:
+        "Record why the customer turned the proposal down, once the manager has told you. " +
+        "Recovery options stay hidden until this exists. Use category 'no_reason' when they " +
+        "say the customer gave none — that is a complete answer, not a gap to fill in.",
+      inputSchema: z.object({
+        reason: z
+          .string()
+          .describe("The manager's own words, as close as you can. Never your inference."),
+        category: z
+          .enum(["price", "availability", "scope", "timing", "competitor", "no_reason", "other"])
+          .describe("Pick from what the manager said. Never guess from the numbers."),
+      }),
+      execute: async ({ reason, category }) => {
+        const result = await recordRejectionFor(inquiryId, reason, category);
+
+        return result.ok
+          ? { recorded: true, category, next: "Call getRecoveryOptions for the computed options." }
+          : { error: result.error };
+      },
+    }),
+
+    getRecoveryOptions: tool({
+      description:
+        "The ways out of a rejection, already computed: restructuring, cheaper alternatives " +
+        "from the library, and a rate reduction inside policy — each with real totals. " +
+        "Use these numbers verbatim; do not work out your own. Empty until a rejection " +
+        "reason has been recorded, and the rate reduction is withheld when no reason was given.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const options = await getRecoveryOptions(inquiryId);
+
+        return options.map((option) => ({
+          kind: option.kind,
+          title: option.title,
+          detail: option.detail,
+          committedInclVat: (option.committedInclVatMinor / 100).toFixed(2),
+          change: (option.deltaInclVatMinor / 100).toFixed(2),
+          currency: option.currency,
+          note: "The manager applies this on the card. You cannot.",
+        }));
+      },
+    }),
+
+    getProposalHistory: tool({
+      description:
+        "Every proposal version for this inquiry: number, status, what the recipient did " +
+        "with it, and why it was rejected if it was.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const history = await getProposalsForInquiry(inquiryId);
+
+        return history.map((proposal) => ({
+          version: proposal.version,
+          status: proposal.status,
+          superseded: proposal.supersededAt !== null,
+          versionNote: proposal.versionNote,
+          rejectionReason: proposal.rejectionReason,
+          rejectionCategory: proposal.rejectionCategory,
+          recipientSelections: describeSelections(
+            (proposal.recipientSelections as RecipientSelections | null) ?? null,
+          ),
         }));
       },
     }),

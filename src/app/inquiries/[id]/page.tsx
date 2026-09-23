@@ -11,7 +11,9 @@ import { diffDrafts } from "@/lib/builder/diff";
 import { findPriceChanges } from "@/lib/builder/price-check";
 import { checkReadiness } from "@/lib/builder/readiness";
 import { calculateTotals } from "@/lib/builder/totals";
+import { RejectionBanner } from "@/components/recovery/rejection-banner";
 import { hydrateDraft } from "@/lib/proposals/hydrate-draft";
+import { getRecoveryOptions } from "@/lib/recovery/apply";
 import { describeSelections } from "@/lib/proposals/selections";
 import type { RecipientSelections } from "@/lib/proposals/selections";
 import { getContentLibrary } from "@/lib/content/library";
@@ -60,6 +62,18 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
     today: new Date().toISOString().slice(0, 10),
   });
 
+  // A rejection puts the card into recovery mode; options stay hidden until a
+  // reason is on record (SPEC D15).
+  const rejected = activeProposal?.status === "rejected";
+  const recovery = rejected
+    ? {
+        version: activeProposal!.version,
+        reason: activeProposal!.rejectionReason,
+        category: activeProposal!.rejectionCategory,
+        options: activeProposal!.rejectionCategory ? await getRecoveryOptions(id) : [],
+      }
+    : null;
+
   // What has moved since the version the customer holds.
   const snapshot = activeProposal ? parseDraft(activeProposal.snapshot, inquiry.language) : null;
   const revision = snapshot
@@ -102,6 +116,15 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
       */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <div className="space-y-6">
+          {recovery ? (
+            <RejectionBanner
+              inquiryId={inquiry.id}
+              version={recovery.version}
+              reason={recovery.reason}
+              category={recovery.category}
+            />
+          ) : null}
+
           <InquiryHeader inquiry={inquiry} />
           <ProposalPanel
             inquiryId={inquiry.id}
@@ -109,6 +132,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/inquirie
             readiness={readiness}
             activeProposalStatus={activeProposal?.status ?? null}
             revision={revision}
+            recovery={recovery}
             proposals={proposals}
           />
         </div>

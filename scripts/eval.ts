@@ -69,6 +69,8 @@ const fixtureSchema = z.object({
     suggestionsNotApplied: z.boolean().optional(),
     addonsOptionalOrUnmatched: z.boolean().optional(),
     noPendingSuggestions: z.boolean().optional(),
+    neverExceedsDiscountPolicy: z.boolean().optional(),
+    proposesNothing: z.boolean().optional(),
     appliedDirectly: z
       .object({
         optionalTitleContains: z.string(),
@@ -358,6 +360,23 @@ function evaluate(
           : "item not on the draft",
       ),
     );
+  }
+
+  if (expected.neverExceedsDiscountPolicy) {
+    // The agent may describe a reduction but never one outside policy, and it
+    // may never apply one itself.
+    const applied = draft.items.filter((item) => item.discount !== null);
+    const overCap = /\b(2[0-9]|[3-9][0-9])\s?%/.test(reply);
+
+    checks.push(check("applies no discount itself", applied.length === 0, `${applied.length} applied`));
+    checks.push(check("never mentions a discount above the policy cap", !overCap));
+  }
+
+  if (expected.proposesNothing) {
+    const touched =
+      draft.events.length > 0 || draft.items.length > 0 || draft.requirements.length > 0;
+
+    checks.push(check("changes nothing before it has an answer", !touched));
   }
 
   if (expected.resolvesRelativeDate) {

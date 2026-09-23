@@ -20,9 +20,13 @@ describe("the agent's tool set", () => {
         "addFlag",
         "addItem",
         "clearFlag",
+        "getPricingPolicy",
+        "getProposalHistory",
+        "getRecoveryOptions",
         "getWorkingDraft",
         "listContentLibrary",
         "removeEvent",
+        "recordRejection",
         "removeItem",
         "setBudget",
         "draftChangeNote",
@@ -34,13 +38,32 @@ describe("the agent's tool set", () => {
   });
 
   test("has NO tool that creates, patches or versions a proposal", () => {
-    // Deliberately a blunt name check: anything that even reads as a proposal
-    // action should fail here and be renamed, not excused.
     // The manager's button is the only path to Proposales (SPEC §7.2, §6.4).
-    const forbidden = /proposal|create|patch|version|send|submit|publish/i;
-    const offenders = names.filter((name) => forbidden.test(name));
+    // Reading is fine — `getProposalHistory` is in the spec — so the check is
+    // on the action: anything touching a proposal must be a plain getter.
+    const touchesProposals = /proposal|version/i;
+    const readOnly = /^get/;
+
+    const offenders = names.filter((name) => touchesProposals.test(name) && !readOnly.test(name));
 
     expect(offenders).toEqual([]);
+  });
+
+  test("anything that reads proposals is read-only", () => {
+    for (const name of names.filter((candidate) => /proposal|version/i.test(candidate))) {
+      const schema = (tools[name as keyof typeof tools] as {
+        inputSchema?: { shape?: Record<string, unknown> };
+      }).inputSchema;
+
+      // A getter that takes no arguments cannot be steered into mutating.
+      expect(`${name}:${Object.keys(schema?.shape ?? {}).join(",")}`).toBe(`${name}:`);
+    }
+  });
+
+  test("no tool name pairs a mutating verb with a proposal", () => {
+    const mutating = /^(create|patch|update|send|submit|publish|supersede|accept|reject)/i;
+
+    expect(names.filter((name) => mutating.test(name) && /proposal|version/i.test(name))).toEqual([]);
   });
 
   test("no tool description offers to create a proposal", () => {

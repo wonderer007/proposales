@@ -7,6 +7,7 @@ import { DismissFlagButton } from "@/components/builder/dismiss-flag-button";
 import { QuantityInput } from "@/components/builder/quantity-input";
 import { RemoveItemButton } from "@/components/builder/remove-item-button";
 import { RevisionPanel } from "@/components/builder/revision-panel";
+import { RecoveryOptions } from "@/components/recovery/recovery-options";
 import { SubmitProposalButton } from "@/components/builder/submit-proposal-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,8 @@ import {
 import { proposalAction, proposalActionLabel } from "@/lib/builder/action-label";
 import type { DraftEvent, DraftItem, WorkingDraft } from "@/lib/builder/draft";
 import type { PriceChange } from "@/lib/builder/price-check";
+import type { RecoveryOption } from "@/lib/recovery/options";
+import type { RejectionCategory } from "@/lib/db/schema";
 import type { Readiness } from "@/lib/builder/readiness";
 import { calculateTotals, formatMoney } from "@/lib/builder/totals";
 import { formatDate, formatTime } from "@/lib/format";
@@ -130,18 +133,28 @@ export type RevisionSummary = {
   totalDeltaMinor: number;
 };
 
+/** Rejection state for the card (D15). */
+export type RecoverySummary = {
+  version: number;
+  reason: string | null;
+  category: RejectionCategory | null;
+  options: RecoveryOption[];
+};
+
 export function ProposalBuilder({
   inquiryId,
   draft,
   readiness,
   activeProposalStatus,
   revision,
+  recovery,
 }: {
   inquiryId: string;
   draft: WorkingDraft;
   readiness: Readiness;
   activeProposalStatus: string | null;
   revision?: RevisionSummary | null;
+  recovery?: RecoverySummary | null;
 }) {
   const totals = calculateTotals(draft);
   const action = proposalAction(activeProposalStatus);
@@ -316,6 +329,14 @@ export function ProposalBuilder({
           </div>
         ) : null}
       </section>
+
+      {recovery?.category ? (
+        <RecoveryOptions
+          inquiryId={inquiryId}
+          options={recovery.options}
+          unguided={recovery.category === "no_reason"}
+        />
+      ) : null}
 
       {revision ? (
         <RevisionPanel
