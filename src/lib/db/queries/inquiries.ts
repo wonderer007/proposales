@@ -20,7 +20,7 @@ export type InquiryListRow = {
 };
 
 /** How many inquiries a page shows. */
-export const PAGE_SIZE = 20;
+export const PAGE_SIZE = 10;
 
 export type InquiryListPage = {
   rows: InquiryListRow[];
