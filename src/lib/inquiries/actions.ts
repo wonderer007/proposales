@@ -41,7 +41,7 @@ export async function syncRfp(inquiryId: string): Promise<ActionResult> {
       .where(eq(inquiries.id, inquiryId));
 
     revalidatePath(`/inquiries/${inquiryId}`);
-    revalidatePath("/");
+    revalidatePath("/inquiries");
 
     return { ok: true };
   } catch (error) {
@@ -112,6 +112,6 @@ export async function createInquiry(input: NewInquiryInput): Promise<CreateInqui
   // The inquiry is saved either way; a failed sync is stored and retried later.
   await syncRfp(inquiryId);
 
-  revalidatePath("/");
+  revalidatePath("/inquiries");
   redirect(`/inquiries/${inquiryId}`);
 }

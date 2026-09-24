@@ -22,7 +22,7 @@ export async function submitProposal(inquiryId: string): Promise<SubmitResult> {
 
   if (result.ok) {
     revalidatePath(`/inquiries/${inquiryId}`);
-    revalidatePath("/");
+    revalidatePath("/inquiries");
   }
 
   return result;

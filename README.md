@@ -51,6 +51,13 @@ The customer's message comes from a public form and goes into the assistant's sy
 
 The worst a successful injection achieves is a misleading draft on the builder card, which the manager reads before clicking anything. `src/lib/agent/tools.test.ts` asserts these limits against the tool set so they cannot be widened by accident.
 
+## Known gaps
+
+- **The double-submit guard is not a guarantee on serverless.** `withDraftLock` is a module-level `Map`, so it only serialises within one instance; two concurrent requests on Vercel can land on different ones. A partial unique index means the second DB insert still fails, but only after its `POST /v3/proposals` succeeded — leaving an orphan draft in Proposales.
+- **Same orphan risk without concurrency.** The create and version paths call the Proposales API first and write to Postgres second, so a DB failure after a successful API call leaves a proposal we have no record of.
+
+Both need the write to be idempotent — an inquiry-scoped key sent to Proposales, or a reservation row taken before the API call.
+
 ## Notes
 
 - Money is stored in minor units; quantities, totals and VAT are computed in code, never by the model.
