@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Proposales Plus
 
-## Getting Started
+Two tools for a hotel's event manager, on top of the [Proposales](https://docs.proposales.com) API.
 
-First, run the development server:
+- **Inquiry Manager**: an inquiry comes in, an AI assistant shortlists products from the content library, and the manager creates or versions the proposal from a builder.
+- **Outreach** — past customers whose event is due round again, with their history and a drafted message. Behind a feature flag. No proposals are created here.
+
+Built with Next.js (App Router), TypeScript, Neon Postgres + Drizzle, the Vercel AI SDK, Zod and shadcn/ui. Bun is the package manager and script runner — not npm, yarn or pnpm.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+cp .env.example .env.local   # fill in DATABASE_URL, PROPOSALES_API_KEY, AI_GATEWAY_API_KEY
+bun run db:migrate
+bun run db:seed              # sample inquiries
+bun run content:seed         # products into the Proposales content library
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.example` documents every variable. The Proposales API key is server-side only.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| | |
+|---|---|
+| `bun run dev` | dev server |
+| `bun run build` | production build |
+| `bun run typecheck` / `lint` / `bun test` | the checks CI would run |
+| `bun run db:generate` / `db:migrate` | Drizzle migrations |
+| `bun run db:seed` / `content:seed` / `outreach:seed` | sample data |
+| `bun run templates:sync` | mirror Proposales proposal templates locally |
+| `bun run eval` | run the agent evals against the live library |
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Money is stored in minor units; quantities, totals and VAT are computed in code, never by the model.
+- Pricing lives in a local `content_catalog` table — the Proposales content API has no price field.
+- `bun run build` needs an arm64 Node on Apple Silicon; an x86_64 Node under Rosetta fails to load Tailwind's native binding.
