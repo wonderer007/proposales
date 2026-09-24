@@ -7,8 +7,19 @@ import { createAgentTools } from "@/lib/agent/tools";
 import { parseDraft } from "@/lib/builder/draft";
 import { getActiveProposal, getInquiryWithEvents, saveMessages } from "@/lib/db/queries";
 import { describeSelections, type RecipientSelections } from "@/lib/proposals/selections";
+import { clientKey, createRateLimiter } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
+
+/**
+ * A cap on the chat endpoint.
+ *
+ * This is the only route that spends model tokens per request, and the app is
+ * an open demo, so an unattended client or a scraper could run up the AI
+ * Gateway bill unchecked. 20 turns a minute is far above what a manager working
+ * through one inquiry needs. Per instance only — see `src/lib/rate-limit.ts`.
+ */
+const checkRateLimit = createRateLimiter({ limit: 20, windowMs: 60_000 });
 
 /**
  * The inquiry assistant.
@@ -23,6 +34,15 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(clientKey(request.headers));
+
+  if (!rate.allowed) {
+    return Response.json(
+      { error: "Too many messages. Wait a moment and try again." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } },
+    );
+  }
+
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {

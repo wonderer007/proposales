@@ -41,6 +41,12 @@ export const envSchema = z.object({
    * which guards the screens and the server actions alike.
    */
   OUTREACH_ENABLED: flag.default(false),
+
+  /**
+   * Shared passcode for the demo. When unset the gate is off, so local
+   * development needs no login; set it on any deployment that is reachable.
+   */
+  DEMO_PASSCODE: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

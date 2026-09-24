@@ -36,7 +36,17 @@ bun run dev
 
 ## Status
 
-Built as an assignment, and deployed as an open demo. **There is no authentication** — anyone with the URL can read every inquiry and act on it, including creating proposals in the connected Proposales workspace. Do not put real customer data in it.
+Built as an assignment. The live site is behind a shared code:
+
+```
+246810
+```
+
+That is the whole of the access control. There are **no accounts and no per-user data** — everyone who has the code sees the same inquiries and can act on all of them, including creating proposals in the connected Proposales workspace. Treat it as a shared demo, not a private one, and do not put real customer data in it.
+
+Set `DEMO_PASSCODE` to enable the gate. With it unset there is no login screen, which is what you want locally.
+
+`/api/chat` is capped at 20 requests a minute per IP, so an unattended client cannot run up the AI Gateway bill. Pair it with a spend cap in the Gateway dashboard — the cap is per instance (see Known gaps), so it is a budget guard, not a hard limit.
 
 ## Prompt injection
 
@@ -56,7 +66,9 @@ The worst a successful injection achieves is a misleading draft on the builder c
 - **The double-submit guard is not a guarantee on serverless.** `withDraftLock` is a module-level `Map`, so it only serialises within one instance; two concurrent requests on Vercel can land on different ones. A partial unique index means the second DB insert still fails, but only after its `POST /v3/proposals` succeeded — leaving an orphan draft in Proposales.
 - **Same orphan risk without concurrency.** The create and version paths call the Proposales API first and write to Postgres second, so a DB failure after a successful API call leaves a proposal we have no record of.
 
-Both need the write to be idempotent — an inquiry-scoped key sent to Proposales, or a reservation row taken before the API call.
+- **The rate limit and the passcode are per-instance and unsigned respectively.** `createRateLimiter` counts in a module-level Map, so the real ceiling is `20 × instances`; the passcode cookie holds the code itself rather than a signed session. Both are demo-grade on purpose.
+
+Both of the orphan risks need the write to be idempotent — an inquiry-scoped key sent to Proposales, or a reservation row taken before the API call.
 
 ## Notes
 
