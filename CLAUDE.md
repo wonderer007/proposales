@@ -4,9 +4,6 @@
 
 **Inquiry-to-Proposal Agent** — a web app for hotel managers. Inquiries (RFPs) are entered through a form and stored in Postgres. On each inquiry page, the manager chats with an AI assistant that helps shortlist products from the hotel's Proposales content library. A separate **Proposal Builder** card shows the shortlist; only the manager, by clicking a button on that card, can create, update, or version a proposal in Proposales.
 
-Full product spec: `docs/SPEC.md`
-Work plan: `docs/DELIVERABLES.md`
-
 ## Tech stack
 
 - Next.js (App Router) + TypeScript (strict)
@@ -97,7 +94,6 @@ src/
     agent/         prompt.ts, tools.ts
 scripts/           whoami.ts, seed-content.ts, seed-db.ts, eval.ts
 evals/fixtures/    test inquiries (JSON)
-docs/              SPEC.md, DELIVERABLES.md
 ```
 
 ## Conventions

@@ -1,5 +1,7 @@
 # Proposales Plus
 
+Live: **https://proposales.vercel.app/**
+
 Two tools for a hotel's event manager, on top of the [Proposales](https://docs.proposales.com) API.
 
 - **Inquiry Manager**: an inquiry comes in, an AI assistant shortlists products from the content library, and the manager creates or versions the proposal from a builder.
@@ -26,11 +28,28 @@ bun run dev
 |---|---|
 | `bun run dev` | dev server |
 | `bun run build` | production build |
-| `bun run typecheck` / `lint` / `bun test` | the checks CI would run |
+| `bun run typecheck` / `lint` / `bun test` | type check, lint, unit tests |
 | `bun run db:generate` / `db:migrate` | Drizzle migrations |
 | `bun run db:seed` / `content:seed` / `outreach:seed` | sample data |
 | `bun run templates:sync` | mirror Proposales proposal templates locally |
 | `bun run eval` | run the agent evals against the live library |
+
+## Status
+
+Built as an assignment, and deployed as an open demo. **There is no authentication** — anyone with the URL can read every inquiry and act on it, including creating proposals in the connected Proposales workspace. Do not put real customer data in it.
+
+## Prompt injection
+
+The customer's message comes from a public form and goes into the assistant's system prompt, so treat it as hostile input. It is delimited, but delimiters are not a security boundary — the defence is that a successful injection has nothing worth reaching:
+
+- The agent has **no tool that creates, patches or versions a proposal**. Only the manager's button does, through a server action.
+- It cannot set `dateConfirmed`. Only the manager's checkbox can.
+- It can only reference products that exist in the content library; the server rejects unknown ids.
+- It cannot apply discounts, override pricing policy, pre-select optional lines for the customer, or create templates.
+- Quantities, totals and VAT are computed in code, never by the model.
+- Every tool is scoped to one inquiry by closure — the inquiry id comes from the route, never from the model, so one inquiry's message cannot reach another's draft.
+
+The worst a successful injection achieves is a misleading draft on the builder card, which the manager reads before clicking anything. `src/lib/agent/tools.test.ts` asserts these limits against the tool set so they cannot be widened by accident.
 
 ## Notes
 
