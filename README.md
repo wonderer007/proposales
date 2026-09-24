@@ -5,7 +5,7 @@ Live: **https://proposales.vercel.app/**
 Two tools for a hotel's event manager, on top of the [Proposales](https://docs.proposales.com) API.
 
 - **Inquiry Manager**: an inquiry comes in, an AI assistant shortlists products from the content library, and the manager creates or versions the proposal from a builder.
-- **Outreach** — past customers whose event is due round again, with their history and a drafted message. Behind a feature flag. No proposals are created here.
+- **Outreach** — past customers whose event is due round again, with their history and a drafted message. No proposals are created here. Behind the `OUTREACH_ENABLED` feature flag, **off unless set** to `1`/`true`/`yes`/`on`; with it off the dashboard card and both routes disappear.
 
 Built with Next.js (App Router), TypeScript, Neon Postgres + Drizzle, the Vercel AI SDK, Zod and shadcn/ui. Bun is the package manager and script runner — not npm, yarn or pnpm.
 
