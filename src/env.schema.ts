@@ -4,6 +4,15 @@ import { z } from "zod";
  * Shape of the server environment. Kept in its own module (values-free) so it
  * can be unit tested without pulling in `server-only`.
  */
+/**
+ * An on/off switch supplied as a string by the shell, Vercel and `.env`.
+ * Generous about what counts as on, strict about everything else being off.
+ */
+const flag = z
+  .string()
+  .transform((value) => ["1", "true", "yes", "on"].includes(value.trim().toLowerCase()))
+  .or(z.boolean());
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
@@ -23,6 +32,15 @@ export const envSchema = z.object({
   AI_GATEWAY_API_KEY: z.string().min(1, "AI_GATEWAY_API_KEY is required"),
   /** Gateway model id, e.g. "anthropic/claude-sonnet-5". */
   AI_MODEL: z.string().min(1).default("anthropic/claude-sonnet-5"),
+
+  /**
+   * Whether the outreach radar (D17) is switched on.
+   *
+   * Off unless explicitly enabled, so a deploy that says nothing about it does
+   * not expose the feature. Read through `isOutreachEnabled` in `src/lib/flags.ts`,
+   * which guards the screens and the server actions alike.
+   */
+  OUTREACH_ENABLED: flag.default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

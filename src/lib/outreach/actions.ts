@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { customerKeyForInquiry, recordOutreach } from "@/lib/db/queries/outreach";
+import { isOutreachEnabled } from "@/lib/flags";
 import { acceptSuggestedCadence } from "./classify";
 import { getLeadDetail } from "./lead-detail";
 import { draftMessageForLead } from "./message";
@@ -15,7 +16,13 @@ import { isIsoDate } from "./today";
  * Nothing here sends anything: "Mark as contacted" records that the manager
  * reached out themselves, so the lead stops being suggested. There is no email
  * integration, by design.
+ *
+ * Each action re-checks the feature flag. A server action is a POST endpoint
+ * that stays reachable whether or not anything renders a button for it, so
+ * hiding the screens would not be enough on its own.
  */
+
+const DISABLED = { ok: false, error: "Outreach is not enabled." } as const;
 
 export type OutreachResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? object : { data: T }))
@@ -35,6 +42,8 @@ export async function regenerateMessage(input: {
   from: string;
   to: string;
 }): Promise<OutreachResult<string>> {
+  if (!isOutreachEnabled()) return DISABLED;
+
   const parsed = rangeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Bad request." };
 
@@ -64,6 +73,8 @@ export async function markAsContacted(input: {
   to: string;
   message: string;
 }): Promise<OutreachResult> {
+  if (!isOutreachEnabled()) return DISABLED;
+
   const parsed = contactedSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Bad request." };
@@ -112,6 +123,8 @@ export async function acceptCadence(input: {
   inquiryId: string;
   cadence: string;
 }): Promise<OutreachResult> {
+  if (!isOutreachEnabled()) return DISABLED;
+
   const parsed = acceptSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Bad request." };
 

@@ -15,6 +15,18 @@ describe("parseEnv", () => {
     expect(env.PROPOSALES_API_BASE_URL).toBe("https://api.proposales.com");
     expect(env.AI_MODEL).toBe("anthropic/claude-sonnet-5");
     expect(env.NODE_ENV).toBe("development");
+    // A feature flag is off unless a deploy says otherwise.
+    expect(env.OUTREACH_ENABLED).toBe(false);
+  });
+
+  test("reads a feature flag generously", () => {
+    for (const on of ["1", "true", "TRUE", " yes ", "on"]) {
+      expect(parseEnv({ ...valid, OUTREACH_ENABLED: on }).OUTREACH_ENABLED).toBe(true);
+    }
+
+    for (const off of ["0", "false", "no", "off", ""]) {
+      expect(parseEnv({ ...valid, OUTREACH_ENABLED: off }).OUTREACH_ENABLED).toBe(false);
+    }
   });
 
   test("keeps explicit overrides", () => {

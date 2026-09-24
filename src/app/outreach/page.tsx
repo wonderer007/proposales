@@ -1,7 +1,10 @@
+import { notFound } from "next/navigation";
+
 import { LeadTable } from "@/components/outreach/lead-table";
 import { OutreachRange } from "@/components/outreach/outreach-range";
 import { PageHeader } from "@/components/page-header";
 import { addDays } from "@/lib/outreach/cadence";
+import { isOutreachEnabled } from "@/lib/flags";
 import { scanForLeads } from "@/lib/outreach/scan";
 import { DEFAULT_RANGE_DAYS, getToday, isIsoDate } from "@/lib/outreach/today";
 
@@ -17,6 +20,9 @@ function first(value: string | string[] | undefined): string | undefined {
 }
 
 export default async function OutreachPage({ searchParams }: PageProps<"/outreach">) {
+  // Switched off means gone, not hidden: the route 404s like any other.
+  if (!isOutreachEnabled()) notFound();
+
   const params = await searchParams;
 
   const today = getToday(params.today);

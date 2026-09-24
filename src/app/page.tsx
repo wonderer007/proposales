@@ -1,18 +1,28 @@
-import { ArrowRight, Inbox, Radar } from "lucide-react";
+import { ArrowRight, Inbox, Radar, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { isOutreachEnabled } from "@/lib/flags";
 
 export const metadata = {
   title: "Dashboard",
+};
+
+type Section = {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  /** When present, the card only shows if this returns true. */
+  flag?: () => boolean;
 };
 
 /**
  * The way in to the app's two halves: the inbound inquiries you answer, and
  * the past customers worth chasing.
  */
-const SECTIONS = [
+const SECTIONS: Section[] = [
   {
     href: "/inquiries",
     icon: Inbox,
@@ -26,6 +36,7 @@ const SECTIONS = [
     title: "Outreach",
     description:
       "Past customers whose event is due round again, with their history and a drafted message to start the conversation.",
+    flag: isOutreachEnabled,
   },
 ];
 
@@ -37,7 +48,8 @@ export default function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {SECTIONS.map(({ href, icon: Icon, title, description }) => (
+        {SECTIONS.filter((section) => section.flag?.() ?? true).map(
+          ({ href, icon: Icon, title, description }) => (
           <Card key={href} className="hover:border-foreground/20 relative transition-colors">
             <CardHeader>
               <Icon className="text-muted-foreground mb-2 size-5" aria-hidden />
@@ -59,7 +71,8 @@ export default function DashboardPage() {
               </span>
             </CardContent>
           </Card>
-        ))}
+          ),
+        )}
       </div>
     </main>
   );

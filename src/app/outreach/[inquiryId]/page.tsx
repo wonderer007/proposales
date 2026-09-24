@@ -7,6 +7,7 @@ import { DraftMessage } from "@/components/outreach/draft-message";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { isOutreachEnabled } from "@/lib/flags";
 import { formatDateCompact } from "@/lib/format";
 import { CADENCE_BADGE, OUTCOME_BADGE } from "@/lib/outreach/badges";
 import { addDays } from "@/lib/outreach/cadence";
@@ -35,6 +36,8 @@ export default async function OutreachLeadPage({
   params,
   searchParams,
 }: PageProps<"/outreach/[inquiryId]">) {
+  if (!isOutreachEnabled()) notFound();
+
   const { inquiryId } = await params;
   const query = await searchParams;
 
