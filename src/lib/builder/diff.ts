@@ -1,5 +1,5 @@
 import { formatDate, formatTime } from "@/lib/format";
-import type { DraftEvent, WorkingDraft } from "./draft";
+import type { DraftEvent, DraftItem, WorkingDraft } from "./draft";
 
 /**
  * A human-readable diff between two drafts, used to tell the manager what
@@ -8,6 +8,31 @@ import type { DraftEvent, WorkingDraft } from "./draft";
 
 function eventName(event: DraftEvent): string {
   return event.label ?? event.type;
+}
+
+/**
+ * How a line is presented to the customer: whether they can decline it, adjust
+ * its quantity, or pick between alternatives.
+ *
+ * These are as much a change to the offer as a price is — the customer sees a
+ * different proposal — so they have to appear here. Leaving them out made an
+ * option-only edit diff to nothing, and `submitProposalToProposales` refuses an
+ * empty diff, so the change never reached Proposales at all.
+ */
+function describePresentation(item: DraftItem): string[] {
+  const parts: string[] = [];
+
+  if (item.choiceGroup) parts.push(`one of "${item.choiceGroup}"`);
+  else if (item.optional) parts.push(item.optionalPicked ? "optional, pre-selected" : "optional");
+  else parts.push("included");
+
+  if (item.quantityEditable) {
+    const from = item.quantityMin ?? 0;
+    const to = item.quantityMax;
+    parts.push(to === null ? `adjustable from ${from}` : `adjustable ${from}–${to}`);
+  }
+
+  return parts;
 }
 
 function describeTimes(event: DraftEvent): string | null {
@@ -80,6 +105,24 @@ export function diffDrafts(before: WorkingDraft, after: WorkingDraft): string[] 
       changes.push(
         `${item.title}: unit price ${(previous.unitPriceMinor / 100).toFixed(2)} → ` +
           `${(item.unitPriceMinor / 100).toFixed(2)} ${item.currency}`,
+      );
+    }
+
+    const wasPresented = describePresentation(previous).join(", ");
+    const isPresented = describePresentation(item).join(", ");
+    if (wasPresented !== isPresented) {
+      changes.push(`${item.title}: ${wasPresented} → ${isPresented}`);
+    }
+
+    // The note is shown to the customer under the line, so editing it changes
+    // what they read.
+    const previousNote = previous.comment ?? "";
+    const nextNote = item.comment ?? "";
+    if (previousNote !== nextNote) {
+      changes.push(
+        nextNote
+          ? `${item.title}: note “${nextNote}”`
+          : `${item.title}: note removed`,
       );
     }
   }

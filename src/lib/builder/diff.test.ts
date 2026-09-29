@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { diffDrafts, draftsAreEquivalent } from "./diff";
 import {
-  addItem, emptyDraft, removeItem, setQuantity, setRequirements, upsertEvent,
+  addItem, emptyDraft, removeItem, setItemOptions, setQuantity, setRequirements, upsertEvent,
   type CatalogProduct,
 } from "./draft";
 
@@ -98,6 +98,95 @@ describe("diffDrafts", () => {
     const after = { ...base(), events: base().events.map((e) => ({ ...e, dateConfirmed: true })) };
 
     expect(draftsAreEquivalent(base(), after)).toBe(true);
+  });
+});
+
+/**
+ * How a line is presented is part of the offer. These diffs were missing, so
+ * an option-only edit produced an empty diff and `submitProposalToProposales`
+ * refused it as a no-op — the change never reached Proposales.
+ */
+describe("presentation changes", () => {
+  test("making a line optional is a change", () => {
+    const after = setItemOptions(base(), "i1", { optional: true });
+
+    expect(draftsAreEquivalent(base(), after)).toBe(false);
+    expect(diffDrafts(base(), after)).toEqual(["Lunch buffet: included → optional"]);
+  });
+
+  test("pre-selecting an optional line is a change", () => {
+    const before = setItemOptions(base(), "i1", { optional: true });
+    const after = setItemOptions(before, "i1", { optionalPicked: true });
+
+    expect(diffDrafts(before, after)).toEqual([
+      "Lunch buffet: optional → optional, pre-selected",
+    ]);
+  });
+
+  test("making a quantity flexible is a change", () => {
+    const after = setItemOptions(base(), "i1", {
+      quantityEditable: true, quantityMin: 20, quantityMax: 60,
+    });
+
+    expect(diffDrafts(base(), after)).toEqual([
+      "Lunch buffet: included → included, adjustable 20–60",
+    ]);
+  });
+
+  test("an open-ended flexible quantity reads as a floor", () => {
+    const after = setItemOptions(base(), "i1", { quantityEditable: true, quantityMin: 10 });
+
+    expect(diffDrafts(base(), after)).toEqual([
+      "Lunch buffet: included → included, adjustable from 10",
+    ]);
+  });
+
+  test("moving the bounds of an already-flexible line is a change", () => {
+    const before = setItemOptions(base(), "i1", {
+      quantityEditable: true, quantityMin: 20, quantityMax: 60,
+    });
+    const after = setItemOptions(before, "i1", { quantityMax: 80 });
+
+    expect(diffDrafts(before, after)).toEqual([
+      "Lunch buffet: included, adjustable 20–60 → included, adjustable 20–80",
+    ]);
+  });
+
+  test("turning flexibility off is a change", () => {
+    const before = setItemOptions(base(), "i1", {
+      quantityEditable: true, quantityMin: 20, quantityMax: 60,
+    });
+    const after = setItemOptions(before, "i1", { quantityEditable: false });
+
+    expect(diffDrafts(before, after)).toEqual([
+      "Lunch buffet: included, adjustable 20–60 → included",
+    ]);
+  });
+
+  test("putting a line into a choice group is a change", () => {
+    const after = setItemOptions(base(), "i1", { choiceGroup: "Catering" });
+
+    expect(diffDrafts(base(), after)).toEqual([
+      'Lunch buffet: included → one of "Catering"',
+    ]);
+  });
+
+  test("adding, editing and removing the customer note are changes", () => {
+    const added = setItemOptions(base(), "i1", { comment: "Vegetarian included" });
+    expect(diffDrafts(base(), added)).toEqual(["Lunch buffet: note “Vegetarian included”"]);
+
+    const edited = setItemOptions(added, "i1", { comment: "Vegan included" });
+    expect(diffDrafts(added, edited)).toEqual(["Lunch buffet: note “Vegan included”"]);
+
+    const removed = setItemOptions(edited, "i1", { comment: "" });
+    expect(diffDrafts(edited, removed)).toEqual(["Lunch buffet: note removed"]);
+  });
+
+  test("a presentation change alone is enough to allow an update", () => {
+    // The regression: this returned [] and the submission was refused.
+    const after = setItemOptions(base(), "i1", { optional: true, quantityEditable: true });
+
+    expect(diffDrafts(base(), after).length).toBeGreaterThan(0);
   });
 });
 
